@@ -1,27 +1,27 @@
 const LEVELS = [
-  { level: 1, name: "新手绵羊", income: 1, toneA: "#bcefd0", toneB: "#68bf74" },
-  { level: 2, name: "青草绵羊", income: 3, toneA: "#c8f4ff", toneB: "#5bbfe0" },
-  { level: 3, name: "铃铛绵羊", income: 8, toneA: "#ffe8a3", toneB: "#f0a53b" },
-  { level: 4, name: "奶油绵羊", income: 18, toneA: "#ffd0be", toneB: "#f07f70" },
-  { level: 5, name: "星光绵羊", income: 42, toneA: "#d9d3ff", toneB: "#8875e6" },
-  { level: 6, name: "金冠绵羊", income: 95, toneA: "#fff2a7", toneB: "#d69b1d" },
-  { level: 7, name: "彩虹绵羊", income: 210, toneA: "#b7f5ec", toneB: "#e76ba0" },
-  { level: 8, name: "传说绵羊", income: 460, toneA: "#f9fbff", toneB: "#5e748f" }
+  { level: 1, name: "棒球帽羊", income: 1 },
+  { level: 2, name: "弹弓羊", income: 3 },
+  { level: 3, name: "铜角羊", income: 8 },
+  { level: 4, name: "蓝帽羊", income: 18 },
+  { level: 5, name: "星角羊", income: 42 },
+  { level: 6, name: "金冠羊", income: 95 },
+  { level: 7, name: "彩虹羊", income: 210 },
+  { level: 8, name: "传说羊", income: 460 }
 ];
 
-const PASTURE_LIMIT = 12;
+const SLOT_COUNT = 12;
 const BUY_COST = 50;
 const BASE_WORKSHOP_SLOTS = 2;
 const MAX_WORKSHOP_SLOTS = 6;
-const SAVE_KEY = "happy-sheep-farm-save-v2";
-const OLD_SAVE_KEY = "happy-sheep-farm-save-v1";
+const SAVE_KEY = "happy-sheep-farm-save-v3";
+const OLD_SAVE_KEYS = ["happy-sheep-farm-save-v2", "happy-sheep-farm-save-v1"];
 
 const state = {
   coins: 100,
   reputation: 0,
   workshopSlots: BASE_WORKSHOP_SLOTS,
-  pasture: [],
-  workshop: [],
+  pasture: Array(SLOT_COUNT).fill(null),
+  workshop: Array(BASE_WORKSHOP_SLOTS).fill(null),
   maxLevel: 1,
   totalBought: 0,
   totalMerged: 0,
@@ -33,68 +33,59 @@ const state = {
 const dom = {};
 let drag = null;
 let toastTimer = null;
-let lastAnimationTime = 0;
 
 function sheepId() {
   return `${Date.now()}-${Math.random().toString(16).slice(2)}`;
-}
-
-function randomBetween(min, max) {
-  return Math.random() * (max - min) + min;
 }
 
 function levelData(level) {
   return LEVELS[Math.min(level, LEVELS.length) - 1];
 }
 
-function createSheep(level = 1, position = randomPasturePosition()) {
-  return {
-    id: sheepId(),
-    level,
-    x: position.x,
-    y: position.y,
-    tx: position.tx ?? randomBetween(18, 82),
-    ty: position.ty ?? randomBetween(42, 82),
-    speed: randomBetween(5.5, 9.5)
-  };
+function createSheep(level = 1) {
+  return { id: sheepId(), level };
 }
 
-function randomPasturePosition() {
-  const x = randomBetween(16, 84);
-  const y = randomBetween(46, 84);
-  return { x, y, tx: randomBetween(16, 84), ty: randomBetween(46, 84) };
-}
-
-function normalizeSheep(raw, fallbackLevel = 1) {
+function normalizeSheep(raw) {
   if (!raw) return null;
-  const position = randomPasturePosition();
   return {
     id: raw.id || sheepId(),
-    level: Math.min(Number(raw.level) || fallbackLevel, LEVELS.length),
-    x: Number.isFinite(Number(raw.x)) ? Number(raw.x) : position.x,
-    y: Number.isFinite(Number(raw.y)) ? Number(raw.y) : position.y,
-    tx: Number.isFinite(Number(raw.tx)) ? Number(raw.tx) : position.tx,
-    ty: Number.isFinite(Number(raw.ty)) ? Number(raw.ty) : position.ty,
-    speed: Number.isFinite(Number(raw.speed)) ? Number(raw.speed) : randomBetween(5.5, 9.5)
+    level: Math.min(Number(raw.level) || 1, LEVELS.length)
   };
 }
 
-function compactSheep(list) {
-  return Array.isArray(list) ? list.filter(Boolean).map((sheep) => normalizeSheep(sheep)) : [];
+function normalizePasture(rawPasture) {
+  const slots = Array(SLOT_COUNT).fill(null);
+  if (!Array.isArray(rawPasture)) return slots;
+  const compact = rawPasture.filter(Boolean).map(normalizeSheep);
+  compact.slice(0, SLOT_COUNT).forEach((sheep, index) => {
+    slots[index] = sheep;
+  });
+  return slots;
+}
+
+function normalizeWorkshop(rawWorkshop, slots) {
+  const workshop = Array(slots).fill(null);
+  if (!Array.isArray(rawWorkshop)) return workshop;
+  rawWorkshop.filter(Boolean).slice(0, slots).forEach((sheep, index) => {
+    workshop[index] = normalizeSheep(sheep);
+  });
+  return workshop;
 }
 
 function loadGame() {
-  const raw = localStorage.getItem(SAVE_KEY) || localStorage.getItem(OLD_SAVE_KEY);
+  const raw = localStorage.getItem(SAVE_KEY) || OLD_SAVE_KEYS.map((key) => localStorage.getItem(key)).find(Boolean);
   if (!raw) return;
 
   try {
     const saved = JSON.parse(raw);
+    const slots = Math.min(Number(saved.workshopSlots) || BASE_WORKSHOP_SLOTS, MAX_WORKSHOP_SLOTS);
     Object.assign(state, {
       coins: Number(saved.coins) || 100,
       reputation: Number(saved.reputation) || 0,
-      workshopSlots: Math.min(Number(saved.workshopSlots) || BASE_WORKSHOP_SLOTS, MAX_WORKSHOP_SLOTS),
-      pasture: compactSheep(saved.pasture).slice(0, PASTURE_LIMIT),
-      workshop: compactSheep(saved.workshop).slice(0, MAX_WORKSHOP_SLOTS),
+      workshopSlots: slots,
+      pasture: normalizePasture(saved.pasture),
+      workshop: normalizeWorkshop(saved.workshop, slots),
       maxLevel: Number(saved.maxLevel) || 1,
       totalBought: Number(saved.totalBought) || 0,
       totalMerged: Number(saved.totalMerged) || 0,
@@ -103,24 +94,20 @@ function loadGame() {
       lastSaved: Number(saved.lastSaved) || Date.now()
     });
 
-    while (state.workshop.length < state.workshopSlots) state.workshop.push(null);
-
     const offlineSeconds = Math.min(7200, Math.floor((Date.now() - state.lastSaved) / 1000));
     const offlineCoins = Math.floor(incomePerSecond() * offlineSeconds * 0.35);
     if (offlineCoins > 0) {
       state.coins += offlineCoins;
       state.totalEarned += offlineCoins;
-      toast(`离线羊毛收入 +${offlineCoins} 金币`);
+      toast(`离线收益 +${offlineCoins} 金币`);
     }
   } catch {
     localStorage.removeItem(SAVE_KEY);
-    localStorage.removeItem(OLD_SAVE_KEY);
   }
 }
 
 function saveGame() {
-  const snapshot = { ...state, lastSaved: Date.now() };
-  localStorage.setItem(SAVE_KEY, JSON.stringify(snapshot));
+  localStorage.setItem(SAVE_KEY, JSON.stringify({ ...state, lastSaved: Date.now() }));
 }
 
 function incomeMultiplier() {
@@ -134,121 +121,87 @@ function incomePerSecond() {
   }, 0) * incomeMultiplier();
 }
 
+function firstEmptyPastureSlot() {
+  return state.pasture.findIndex((slot) => !slot);
+}
+
 function firstEmptyWorkshopSlot() {
-  for (let i = 0; i < state.workshopSlots; i += 1) {
-    if (!state.workshop[i]) return i;
-  }
-  return -1;
+  return state.workshop.findIndex((slot) => !slot);
 }
 
 function buySheep() {
-  if (state.pasture.length >= PASTURE_LIMIT) {
-    toast("牧场满了，先合成或拖进工作间。");
+  const slot = firstEmptyPastureSlot();
+  if (slot === -1) {
+    toast("草地满了，先合成或放进工作间。");
     return;
   }
   if (state.coins < BUY_COST) {
-    toast("金币不够，等工作间产出一点再买。");
+    toast("金币不够。");
     return;
   }
 
   state.coins -= BUY_COST;
-  state.pasture.push(createSheep(1));
+  state.pasture[slot] = createSheep(1);
   state.totalBought += 1;
-  toast("买到 1 级羊，已经放进牧场。");
+  toast("购买成功");
   render();
   saveGame();
 }
 
-function movePastureToWorkshop(index) {
-  const sheep = state.pasture[index];
+function movePastureToWorkshop(slotIndex) {
+  const sheep = state.pasture[slotIndex];
   if (!sheep) return false;
-
   const target = firstEmptyWorkshopSlot();
   if (target === -1) {
-    toast("工作间满了，可以先扩建。");
+    toast("工作间满了。");
     return false;
   }
-
   state.workshop[target] = sheep;
-  state.pasture.splice(index, 1);
-  toast(`${levelData(sheep.level).name} 进工作间了。`);
+  state.pasture[slotIndex] = null;
+  toast(`${levelData(sheep.level).name} 开始产金币`);
   render();
   saveGame();
   return true;
 }
 
-function moveWorkshopToPasture(index) {
-  const sheep = state.workshop[index];
-  if (!sheep) return;
-  if (state.pasture.length >= PASTURE_LIMIT) {
-    toast("牧场满了，暂时送不回来。");
-    return;
-  }
-
-  const position = randomPasturePosition();
-  state.pasture.push({ ...sheep, ...position, tx: position.tx, ty: position.ty });
-  state.workshop[index] = null;
-  toast(`${levelData(sheep.level).name} 回到牧场。`);
-  render();
-  saveGame();
-}
-
 function mergeSheep(sourceIndex, targetIndex) {
   const source = state.pasture[sourceIndex];
   const target = state.pasture[targetIndex];
-  if (!source || !target) return false;
-  if (source.id === target.id) return false;
+  if (!source || !target || sourceIndex === targetIndex) return false;
   if (source.level !== target.level) {
-    toast("只有相同等级的羊才能合成。");
+    toast("相同等级才能合成。");
     return false;
   }
   if (source.level >= LEVELS.length) {
-    toast("这只羊已经是最高等级。");
+    toast("已经是最高等级。");
     return false;
   }
 
   const nextLevel = source.level + 1;
-  const merged = createSheep(nextLevel, {
-    x: (source.x + target.x) / 2,
-    y: (source.y + target.y) / 2,
-    tx: randomBetween(16, 84),
-    ty: randomBetween(46, 84)
-  });
-
-  const keep = state.pasture.filter((_, index) => index !== sourceIndex && index !== targetIndex);
-  keep.push(merged);
-  state.pasture = keep;
+  state.pasture[targetIndex] = createSheep(nextLevel);
+  state.pasture[sourceIndex] = null;
   state.maxLevel = Math.max(state.maxLevel, nextLevel);
   state.reputation += nextLevel * 3;
   state.totalMerged += 1;
-  toast(`合成成功：${levelData(nextLevel).name}`);
+  state.coins += 100;
+  showLevelUp(nextLevel);
   render();
   saveGame();
   return true;
 }
 
 function autoMerge() {
-  let merged = 0;
-  let changed = true;
-
-  while (changed) {
-    changed = false;
-    for (let level = 1; level < LEVELS.length; level += 1) {
-      const indexes = state.pasture
-        .map((sheep, index) => ({ sheep, index }))
-        .filter((item) => item.sheep && item.sheep.level === level)
-        .map((item) => item.index);
-
-      if (indexes.length >= 2) {
-        mergeSheep(indexes[0], indexes[1]);
-        merged += 1;
-        changed = true;
-        break;
-      }
+  for (let level = 1; level < LEVELS.length; level += 1) {
+    const indexes = state.pasture
+      .map((sheep, index) => ({ sheep, index }))
+      .filter((item) => item.sheep && item.sheep.level === level)
+      .map((item) => item.index);
+    if (indexes.length >= 2) {
+      mergeSheep(indexes[0], indexes[1]);
+      return;
     }
   }
-
-  if (!merged) toast("牧场里还没有可合成的同级羊。");
+  toast("没有可合成的同级羊。");
 }
 
 function collectWoolOrder() {
@@ -256,18 +209,15 @@ function collectWoolOrder() {
   const cooldownKey = "happy-sheep-order-time";
   const last = Number(localStorage.getItem(cooldownKey)) || 0;
   const waitMs = 45000;
-
   if (Date.now() - last < waitMs) {
-    const left = Math.ceil((waitMs - (Date.now() - last)) / 1000);
-    toast(`羊毛订单还要 ${left} 秒刷新。`);
+    toast(`订单还要 ${Math.ceil((waitMs - (Date.now() - last)) / 1000)} 秒`);
     return;
   }
-
   state.coins += reward;
   state.reputation += 5;
   state.totalEarned += reward;
   localStorage.setItem(cooldownKey, String(Date.now()));
-  toast(`羊毛订单完成，获得 ${reward} 金币。`);
+  toast(`获得 ${reward} 金币`);
   render();
   saveGame();
 }
@@ -275,48 +225,24 @@ function collectWoolOrder() {
 function feedBoost() {
   const cost = Math.max(60, state.maxLevel * 35);
   if (Date.now() < state.boostUntil) {
-    toast("加速已经生效中。");
+    toast("加速中。");
     return;
   }
   if (state.coins < cost) {
-    toast(`喂草需要 ${cost} 金币。`);
+    toast(`加速需要 ${cost} 金币。`);
     return;
   }
-
   state.coins -= cost;
   state.boostUntil = Date.now() + 30000;
-  toast("小羊吃饱了，30 秒双倍产出。");
-  render();
-  saveGame();
-}
-
-function unlockWorkshopSlot() {
-  if (state.workshopSlots >= MAX_WORKSHOP_SLOTS) {
-    toast("工作间已经扩到最大。");
-    return;
-  }
-
-  const cost = 160 * (state.workshopSlots - BASE_WORKSHOP_SLOTS + 1);
-  if (state.coins < cost) {
-    toast(`扩建需要 ${cost} 金币。`);
-    return;
-  }
-
-  state.coins -= cost;
-  state.workshopSlots += 1;
-  state.workshop.push(null);
-  state.reputation += 12;
-  toast("工作间扩建成功。");
+  toast("30 秒双倍产出");
   render();
   saveGame();
 }
 
 function resetGame() {
-  const ok = window.confirm("确定要重开开心养羊场吗？");
-  if (!ok) return;
-
+  if (!window.confirm("确定重开吗？")) return;
   localStorage.removeItem(SAVE_KEY);
-  localStorage.removeItem(OLD_SAVE_KEY);
+  OLD_SAVE_KEYS.forEach((key) => localStorage.removeItem(key));
   localStorage.removeItem("happy-sheep-order-time");
   localStorage.removeItem("happy-sheep-quest-flags");
   window.location.reload();
@@ -324,291 +250,185 @@ function resetGame() {
 
 function formatNumber(value) {
   if (value >= 1000000) return `${(value / 1000000).toFixed(1)}M`;
-  if (value >= 10000) return `${(value / 1000).toFixed(1)}K`;
+  if (value >= 1000) return `${(value / 1000).toFixed(1)}K`;
   return `${Math.floor(value)}`;
 }
 
 function sheepMarkup(sheep) {
-  const data = levelData(sheep.level);
   return `
-    <span class="sheep-level">Lv.${sheep.level}</span>
-    <span class="sheep-body" style="--tone-a: ${data.toneA}"></span>
+    <span class="sheep-core"></span>
     <span class="sheep-face"></span>
+    <span class="sheep-hat"></span>
+    <span class="sheep-horn left"></span>
+    <span class="sheep-horn right"></span>
+    <span class="sheep-crown"></span>
+    <span class="sheep-scarf"></span>
+    <span class="sheep-tool"></span>
     <span class="sheep-leg one"></span>
     <span class="sheep-leg two"></span>
-    <span class="sheep-income">${data.income}/s</span>
+    <span class="sheep-level">${sheep.level}</span>
   `;
 }
 
-function pastureSheepButton(sheep, index) {
-  const data = levelData(sheep.level);
+function sheepButton(sheep, slotIndex) {
   const button = document.createElement("button");
-  button.className = "sheep-token";
+  button.className = `sheep-token variant-${sheep.level}`;
   button.type = "button";
-  button.style.left = `${sheep.x}%`;
-  button.style.top = `${sheep.y}%`;
-  button.style.setProperty("--tone-a", data.toneA);
-  button.style.setProperty("--tone-b", data.toneB);
   button.setAttribute("data-testid", "pasture-sheep");
-  button.setAttribute("data-sheep-id", sheep.id);
-  button.setAttribute("aria-label", `${data.name}，等级 ${sheep.level}`);
+  button.setAttribute("data-slot", String(slotIndex));
+  button.setAttribute("aria-label", `${levelData(sheep.level).name}，等级 ${sheep.level}`);
   button.innerHTML = sheepMarkup(sheep);
-  button.addEventListener("pointerdown", (event) => startDrag(event, index));
+  button.addEventListener("pointerdown", (event) => startDrag(event, slotIndex));
   return button;
 }
 
-function workshopCard(sheep, index) {
-  const slot = document.createElement("div");
-  slot.className = `workshop-slot ${sheep ? "" : "empty"}`;
-  slot.setAttribute("data-workshop-slot", String(index));
-
-  if (!sheep) return slot;
-
-  const data = levelData(sheep.level);
-  const button = document.createElement("button");
-  button.className = "workshop-card";
-  button.type = "button";
-  button.style.setProperty("--tone-a", data.toneA);
-  button.style.setProperty("--tone-b", data.toneB);
-  button.setAttribute("data-testid", "workshop-sheep");
-  button.setAttribute("aria-label", `${data.name}，点击送回牧场`);
-  button.innerHTML = `<span class="sheep-token">${sheepMarkup(sheep)}</span>`;
-  button.addEventListener("click", () => moveWorkshopToPasture(index));
-  slot.appendChild(button);
-  return slot;
-}
-
-function renderSheep() {
-  dom.pasture.querySelectorAll(".sheep-token").forEach((node) => node.remove());
+function renderPasture() {
+  dom.pasture.innerHTML = "";
   state.pasture.forEach((sheep, index) => {
-    dom.pasture.appendChild(pastureSheepButton(sheep, index));
-  });
-
-  dom.workshop.innerHTML = "";
-  for (let i = 0; i < state.workshopSlots; i += 1) {
-    dom.workshop.appendChild(workshopCard(state.workshop[i], i));
-  }
-}
-
-function updateSheepPositions() {
-  state.pasture.forEach((sheep) => {
-    const node = dom.pasture.querySelector(`[data-sheep-id="${sheep.id}"]`);
-    if (node && !node.classList.contains("dragging")) {
-      node.style.left = `${sheep.x}%`;
-      node.style.top = `${sheep.y}%`;
-    }
+    const slot = document.createElement("div");
+    slot.className = `pasture-slot ${sheep ? "" : "empty"}`;
+    slot.setAttribute("data-slot", String(index));
+    if (sheep) slot.appendChild(sheepButton(sheep, index));
+    dom.pasture.appendChild(slot);
   });
 }
 
-function startDrag(event, index) {
-  const sheep = state.pasture[index];
+function startDrag(event, slotIndex) {
+  const sheep = state.pasture[slotIndex];
   if (!sheep) return;
-
-  const rect = dom.pasture.getBoundingClientRect();
   const node = event.currentTarget;
+  const stageRect = dom.stage.getBoundingClientRect();
+  const rect = node.getBoundingClientRect();
   node.setPointerCapture(event.pointerId);
   node.classList.add("dragging");
 
   drag = {
     pointerId: event.pointerId,
-    index,
-    sheepId: sheep.id,
+    sourceIndex: slotIndex,
     node,
-    rect
+    stageRect,
+    offsetX: event.clientX - rect.left - rect.width / 2,
+    offsetY: event.clientY - rect.top - rect.height / 2
   };
 
-  moveDraggedSheep(event.clientX, event.clientY);
-  node.addEventListener("pointermove", onDragMove);
-  node.addEventListener("pointerup", endDrag);
-  node.addEventListener("pointercancel", endDrag);
+  document.body.appendChild(node);
+  node.style.position = "fixed";
+  node.style.width = `${rect.width}px`;
+  node.style.height = `${rect.height}px`;
+  moveDraggedNode(event.clientX, event.clientY);
+  document.addEventListener("pointermove", onDragMove);
+  document.addEventListener("pointerup", endDrag);
+  document.addEventListener("pointercancel", endDrag);
 }
 
-function moveDraggedSheep(clientX, clientY) {
+function moveDraggedNode(clientX, clientY) {
   if (!drag) return;
-  const x = ((clientX - drag.rect.left) / drag.rect.width) * 100;
-  const y = ((clientY - drag.rect.top) / drag.rect.height) * 100;
-  const sheep = state.pasture[drag.index];
-  if (!sheep) return;
-
-  sheep.x = Math.max(6, Math.min(94, x));
-  sheep.y = Math.max(24, Math.min(88, y));
-  sheep.tx = sheep.x;
-  sheep.ty = sheep.y;
-  drag.node.style.left = `${sheep.x}%`;
-  drag.node.style.top = `${sheep.y}%`;
-  highlightMergeTarget();
+  drag.node.style.left = `${clientX - drag.offsetX}px`;
+  drag.node.style.top = `${clientY - drag.offsetY}px`;
+  highlightTarget(clientX, clientY);
 }
 
 function onDragMove(event) {
-  moveDraggedSheep(event.clientX, event.clientY);
+  moveDraggedNode(event.clientX, event.clientY);
 }
 
 function endDrag(event) {
   if (!drag) return;
+  const source = drag.sourceIndex;
+  const target = slotFromPoint(event.clientX, event.clientY);
+  const droppedOnWorkshop = event.clientX > dom.stage.getBoundingClientRect().right - 92 && event.clientY < dom.stage.getBoundingClientRect().top + 430;
 
-  const dragged = drag;
-  dragged.node.classList.remove("dragging");
-  dragged.node.releasePointerCapture(dragged.pointerId);
-  dragged.node.removeEventListener("pointermove", onDragMove);
-  dragged.node.removeEventListener("pointerup", endDrag);
-  dragged.node.removeEventListener("pointercancel", endDrag);
-  clearMergeHighlights();
-
-  const workshopRect = dom.workshop.getBoundingClientRect();
-  const droppedInWorkshop =
-    event.clientX >= workshopRect.left &&
-    event.clientX <= workshopRect.right &&
-    event.clientY >= workshopRect.top &&
-    event.clientY <= workshopRect.bottom;
-
-  const targetIndex = findMergeTargetIndex(dragged.index);
+  document.removeEventListener("pointermove", onDragMove);
+  document.removeEventListener("pointerup", endDrag);
+  document.removeEventListener("pointercancel", endDrag);
+  clearTargets();
+  if (drag.node.parentNode) {
+    drag.node.remove();
+  }
   drag = null;
 
-  if (droppedInWorkshop) {
-    movePastureToWorkshop(dragged.index);
-    return;
+  if (droppedOnWorkshop) {
+    movePastureToWorkshop(source);
+  } else if (target !== -1 && target !== source && state.pasture[target]) {
+    mergeSheep(source, target);
+  } else {
+    render();
+    saveGame();
   }
-
-  if (targetIndex !== -1) {
-    mergeSheep(dragged.index, targetIndex);
-    return;
-  }
-
-  render();
-  saveGame();
 }
 
-function findMergeTargetIndex(sourceIndex) {
-  const source = state.pasture[sourceIndex];
-  if (!source) return -1;
-
-  return state.pasture.findIndex((candidate, index) => {
-    if (!candidate || index === sourceIndex) return false;
-    if (candidate.level !== source.level) return false;
-    const dx = candidate.x - source.x;
-    const dy = candidate.y - source.y;
-    return Math.sqrt(dx * dx + dy * dy) < 11;
-  });
+function slotFromPoint(x, y) {
+  const element = document.elementFromPoint(x, y);
+  const slot = element?.closest?.(".pasture-slot");
+  if (!slot) return -1;
+  return Number(slot.dataset.slot);
 }
 
-function highlightMergeTarget() {
-  clearMergeHighlights();
-  if (!drag) return;
-  const targetIndex = findMergeTargetIndex(drag.index);
-  if (targetIndex === -1) return;
-  const target = state.pasture[targetIndex];
-  const targetNode = dom.pasture.querySelector(`[data-sheep-id="${target.id}"]`);
+function highlightTarget(x, y) {
+  clearTargets();
+  const target = slotFromPoint(x, y);
+  if (target === -1 || target === drag.sourceIndex) return;
+  const sheep = state.pasture[target];
+  const source = state.pasture[drag.sourceIndex];
+  if (!sheep || !source || sheep.level !== source.level) return;
+  const targetNode = dom.pasture.querySelector(`[data-slot="${target}"] .sheep-token`);
   if (targetNode) targetNode.classList.add("merge-target");
 }
 
-function clearMergeHighlights() {
-  dom.pasture.querySelectorAll(".merge-target").forEach((node) => node.classList.remove("merge-target"));
+function clearTargets() {
+  document.querySelectorAll(".merge-target").forEach((node) => node.classList.remove("merge-target"));
 }
 
-function animatePasture(time) {
-  if (!lastAnimationTime) lastAnimationTime = time;
-  const delta = Math.min(0.05, (time - lastAnimationTime) / 1000);
-  lastAnimationTime = time;
+function renderHud() {
+  const sheepCount = state.pasture.filter(Boolean).length + state.workshop.filter(Boolean).length;
+  dom.coins.textContent = formatNumber(state.coins);
+  dom.income.textContent = `${formatNumber(incomePerSecond())}/秒`;
+  dom.maxLevel.textContent = `Lv.${state.maxLevel}`;
+  dom.pastureCount.textContent = String(sheepCount);
+  dom.buySheep.disabled = state.coins < BUY_COST || firstEmptyPastureSlot() === -1;
+  dom.feedBoost.textContent = Date.now() < state.boostUntil ? "加速中" : "加速";
+}
 
-  state.pasture.forEach((sheep) => {
-    if (drag && drag.sheepId === sheep.id) return;
-    const dx = sheep.tx - sheep.x;
-    const dy = sheep.ty - sheep.y;
-    const distance = Math.sqrt(dx * dx + dy * dy);
-
-    if (distance < 1.2) {
-      sheep.tx = randomBetween(14, 86);
-      sheep.ty = randomBetween(42, 84);
-      sheep.speed = randomBetween(5.5, 9.5);
-      return;
-    }
-
-    const step = sheep.speed * delta;
-    sheep.x += (dx / distance) * step;
-    sheep.y += (dy / distance) * step;
-  });
-
-  updateSheepPositions();
-  requestAnimationFrame(animatePasture);
+function render() {
+  renderHud();
+  renderPasture();
 }
 
 function questData() {
   return [
-    {
-      title: "买入 4 只小羊",
-      done: state.totalBought >= 4,
-      progress: `${Math.min(state.totalBought, 4)}/4`,
-      reward: "+20 名声"
-    },
-    {
-      title: "合成到 3 级羊",
-      done: state.maxLevel >= 3,
-      progress: `最高 Lv.${state.maxLevel}`,
-      reward: "+80 金币"
-    },
-    {
-      title: "工作间每秒 10 金币",
-      done: incomePerSecond() >= 10,
-      progress: `${formatNumber(incomePerSecond())}/s`,
-      reward: "+30 名声"
-    }
+    { title: "买入 4 只羊", done: state.totalBought >= 4, progress: `${Math.min(state.totalBought, 4)}/4` },
+    { title: "合成到 Lv.3", done: state.maxLevel >= 3, progress: `当前 Lv.${state.maxLevel}` },
+    { title: "每秒 10 金币", done: incomePerSecond() >= 10, progress: `${formatNumber(incomePerSecond())}/秒` }
   ];
 }
 
-function renderQuestList() {
-  return questData()
-    .map(
-      (quest) => `
-        <div class="quest ${quest.done ? "done" : ""}">
-          <strong>${quest.done ? "完成" : "进行中"} · ${quest.title}</strong>
-          <span>${quest.progress} · ${quest.reward}</span>
-        </div>
-      `
-    )
-    .join("");
-}
-
-function renderBook() {
-  return `
-    <div class="sheep-book">
-      ${LEVELS.map((item) => {
-        const unlocked = item.level <= state.maxLevel;
-        return `
-          <div class="book-item ${unlocked ? "" : "locked"}">
-            <span class="book-icon">${unlocked ? "羊" : "?"}</span>
-            <strong>Lv.${item.level}</strong>
-            <strong>${unlocked ? item.name : "未发现"}</strong>
-          </div>
-        `;
-      }).join("")}
-    </div>
-  `;
-}
-
 function openModal(type) {
-  const content = {
-    quest: {
-      title: "今日目标",
-      body: renderQuestList()
-    },
-    book: {
-      title: "小羊图鉴",
-      body: renderBook()
-    },
-    help: {
-      title: "玩法",
-      body: `
-        <div class="help-card">初始有 100 金币，点击“买 1 级羊”会花 50 金币把小羊放进牧场。</div>
-        <div class="help-card">牧场里的羊会自动走动。按住一只羊拖到同等级羊旁边，松手即可合成更高等级。</div>
-        <div class="help-card">把牧场里的羊拖进右侧工作间，它会每秒产生金币。点击工作间里的羊可以送回牧场。</div>
-        <div class="help-card">羊毛订单、喂草加速、扩建工作间会让成长更快，进度会自动保存。</div>
-      `
-    }
-  }[type];
-
-  if (!content) return;
-  dom.modalTitle.textContent = content.title;
-  dom.modalBody.innerHTML = content.body;
+  if (type === "workshop") {
+    dom.modalTitle.textContent = "金币工作间";
+    dom.modalBody.innerHTML = `
+      <div class="workshop-list">
+        ${Array.from({ length: state.workshopSlots }, (_, index) => {
+          const sheep = state.workshop[index];
+          return `<div class="workshop-row">${sheep ? `${levelData(sheep.level).name}<br>+${levelData(sheep.level).income}/秒` : "空位"}</div>`;
+        }).join("")}
+      </div>
+      <div class="help-card">把羊拖到右上角功能按钮附近，可以送入工作间持续产金币。</div>
+    `;
+  }
+  if (type === "quest") {
+    dom.modalTitle.textContent = "今日任务";
+    dom.modalBody.innerHTML = questData()
+      .map((quest) => `<div class="quest ${quest.done ? "done" : ""}"><strong>${quest.title}</strong><span>${quest.progress}</span></div>`)
+      .join("");
+  }
+  if (type === "book") {
+    dom.modalTitle.textContent = "羊羊图鉴";
+    dom.modalBody.innerHTML = `
+      <div class="sheep-book">
+        ${LEVELS.map((item) => `<div class="book-item ${item.level <= state.maxLevel ? "" : "locked"}"><strong>${item.level <= state.maxLevel ? item.name : "未发现"}</strong><span>Lv.${item.level}</span></div>`).join("")}
+      </div>
+    `;
+  }
   dom.modalBackdrop.hidden = false;
 }
 
@@ -616,69 +436,14 @@ function closeModal() {
   dom.modalBackdrop.hidden = true;
 }
 
-function applyQuestRewards() {
-  const flagsKey = "happy-sheep-quest-flags";
-  const flags = JSON.parse(localStorage.getItem(flagsKey) || "{}");
-  const checks = [
-    { key: "buy4", done: state.totalBought >= 4, reward: () => (state.reputation += 20) },
-    { key: "level3", done: state.maxLevel >= 3, reward: () => (state.coins += 80) },
-    { key: "income10", done: incomePerSecond() >= 10, reward: () => (state.reputation += 30) }
-  ];
-
-  let changed = false;
-  checks.forEach((check) => {
-    if (check.done && !flags[check.key]) {
-      check.reward();
-      flags[check.key] = true;
-      changed = true;
-    }
-  });
-
-  if (changed) {
-    localStorage.setItem(flagsKey, JSON.stringify(flags));
-    toast("目标奖励已到账。");
-    saveGame();
-  }
-}
-
-function renderHud() {
-  const income = incomePerSecond();
-  dom.coins.textContent = formatNumber(state.coins);
-  dom.income.textContent = `${formatNumber(income)}/s`;
-  dom.maxLevel.textContent = `Lv.${state.maxLevel}`;
-  dom.reputation.textContent = formatNumber(state.reputation);
-  dom.pastureCount.textContent = `${state.pasture.length}/${PASTURE_LIMIT}`;
-  dom.buySheep.disabled = state.coins < BUY_COST || state.pasture.length >= PASTURE_LIMIT;
-  dom.feedBoost.textContent = Date.now() < state.boostUntil ? "加速中" : "喂草加速";
-  dom.unlockSlot.textContent = state.workshopSlots >= MAX_WORKSHOP_SLOTS
-    ? "已满级"
-    : `扩建 ${160 * (state.workshopSlots - BASE_WORKSHOP_SLOTS + 1)}`;
-  dom.boostBadge.textContent = Date.now() < state.boostUntil ? "双倍速度" : "普通速度";
-}
-
-function render() {
-  state.pasture = state.pasture.filter(Boolean).slice(0, PASTURE_LIMIT);
-  state.workshop = state.workshop.slice(0, state.workshopSlots);
-  while (state.workshop.length < state.workshopSlots) state.workshop.push(null);
-
-  renderHud();
-  renderSheep();
-}
-
-function showWorkshopCoinPop(amount) {
-  if (amount <= 0) return;
-  const pop = document.createElement("span");
-  pop.className = "coin-pop";
-  pop.textContent = `+${formatNumber(amount)}`;
-  dom.workshop.appendChild(pop);
-  setTimeout(() => pop.remove(), 1000);
-}
-
-function toast(message) {
-  dom.toast.textContent = message;
-  dom.toast.classList.add("show");
-  clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => dom.toast.classList.remove("show"), 2200);
+function showLevelUp(level) {
+  dom.modalTitle.textContent = "恭喜升级啦";
+  dom.modalBody.innerHTML = `
+    <button class="sheep-token variant-${level}" type="button">${sheepMarkup({ level })}</button>
+    <div>Lv.${level} ${levelData(level).name}</div>
+    <div>恭喜获得100金币</div>
+  `;
+  dom.modalBackdrop.hidden = false;
 }
 
 function tick() {
@@ -686,29 +451,31 @@ function tick() {
   if (income > 0) {
     state.coins += income;
     state.totalEarned += income;
-    showWorkshopCoinPop(income);
   }
-  applyQuestRewards();
   renderHud();
   saveGame();
 }
 
+function toast(message) {
+  dom.toast.textContent = message;
+  dom.toast.classList.add("show");
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => dom.toast.classList.remove("show"), 1700);
+}
+
 function bindDom() {
+  dom.stage = document.querySelector(".phone-stage");
   [
     "coins",
     "income",
     "maxLevel",
-    "reputation",
+    "pastureCount",
     "buySheep",
     "autoMerge",
     "collectBonus",
     "feedBoost",
     "resetGame",
-    "unlockSlot",
     "pasture",
-    "workshop",
-    "pastureCount",
-    "boostBadge",
     "toast",
     "modalBackdrop",
     "modalTitle",
@@ -724,14 +491,10 @@ function bindEvents() {
   dom.autoMerge.addEventListener("click", autoMerge);
   dom.collectBonus.addEventListener("click", collectWoolOrder);
   dom.feedBoost.addEventListener("click", feedBoost);
-  dom.unlockSlot.addEventListener("click", unlockWorkshopSlot);
   dom.resetGame.addEventListener("click", resetGame);
   dom.closeModal.addEventListener("click", closeModal);
   dom.modalBackdrop.addEventListener("click", (event) => {
     if (event.target === dom.modalBackdrop) closeModal();
-  });
-  document.addEventListener("keydown", (event) => {
-    if (event.key === "Escape") closeModal();
   });
   document.querySelectorAll("[data-modal]").forEach((button) => {
     button.addEventListener("click", () => openModal(button.dataset.modal));
@@ -744,7 +507,6 @@ function init() {
   loadGame();
   render();
   setInterval(tick, 1000);
-  requestAnimationFrame(animatePasture);
 }
 
 init();

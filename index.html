@@ -7,77 +7,45 @@
     <link rel="stylesheet" href="./styles.css" />
   </head>
   <body>
-    <main class="app-shell">
-      <section class="topbar" aria-label="游戏顶部栏">
-        <div>
-          <p class="eyebrow">Happy Sheep Farm</p>
-          <h1>开心养羊场</h1>
-        </div>
-        <div class="menu-actions">
-          <button type="button" data-modal="quest">任务</button>
-          <button type="button" data-modal="book">图鉴</button>
-          <button type="button" data-modal="help">玩法</button>
-        </div>
+    <main class="phone-stage" aria-label="开心养羊场">
+      <section class="scene-bg" aria-hidden="true">
+        <div class="cloud cloud-left"></div>
+        <div class="cloud cloud-right"></div>
+        <div class="tree"></div>
+        <div class="house"></div>
+        <div class="hills"></div>
       </section>
 
-      <section class="hud-grid" aria-label="游戏数据">
-        <article class="stat">
-          <span>金币</span>
+      <header class="game-header">
+        <div class="level-line">当前等级: <strong id="maxLevel">Lv.1</strong> 第<span id="pastureCount">0</span>只羊</div>
+        <div class="wood-sign">
+          <span class="gem"></span>
           <strong id="coins">100</strong>
-        </article>
-        <article class="stat">
-          <span>每秒收入</span>
-          <strong id="income">0/s</strong>
-        </article>
-        <article class="stat">
-          <span>最高等级</span>
-          <strong id="maxLevel">Lv.1</strong>
-        </article>
-        <article class="stat">
-          <span>羊场名声</span>
-          <strong id="reputation">0</strong>
-        </article>
+          <strong id="income">0/秒</strong>
+        </div>
+      </header>
+
+      <nav class="side-buttons" aria-label="功能按钮">
+        <button type="button" data-modal="workshop">工作间</button>
+        <button type="button" data-modal="quest">任务</button>
+        <button type="button" data-modal="book">图鉴</button>
+        <button id="feedBoost" type="button" data-testid="feed-boost">加速</button>
+      </nav>
+
+      <section id="pasture" class="pasture-grid" data-dropzone="pasture" aria-label="羊场"></section>
+
+      <section class="bottom-shop" aria-label="购买">
+        <button id="buySheep" class="buy-button" type="button" data-testid="buy-sheep">
+          <span class="cart-icon">商店</span>
+          <strong>快速购买</strong>
+          <small>50 金币 · Lv.1</small>
+        </button>
       </section>
 
-      <section class="action-bar" aria-label="主要操作">
-        <button id="buySheep" class="primary-action" type="button" data-testid="buy-sheep">
-          <span>买 1 级羊</span>
-          <strong>50 金币</strong>
-        </button>
+      <section class="utility-actions" aria-label="辅助操作">
         <button id="autoMerge" type="button" data-testid="auto-merge">一键合成</button>
         <button id="collectBonus" type="button" data-testid="collect-bonus">羊毛订单</button>
-        <button id="feedBoost" type="button" data-testid="feed-boost">喂草加速</button>
-        <button id="resetGame" class="quiet" type="button" data-testid="reset-game">重开</button>
-      </section>
-
-      <section class="game-stage" aria-label="牧场和工作间">
-        <section class="pasture-panel" aria-label="可视化牧场">
-          <div class="section-title">
-            <div>
-              <p class="eyebrow">Pasture</p>
-              <h2>牧场</h2>
-            </div>
-            <span id="pastureCount">0/12</span>
-          </div>
-          <div id="pasture" class="pasture-scene" data-dropzone="pasture">
-            <div class="pasture-sky" aria-hidden="true"></div>
-            <div class="pasture-path" aria-hidden="true"></div>
-            <div class="pasture-hint">买来的羊会在这里走动。拖动两只同等级羊靠在一起即可合成。</div>
-          </div>
-        </section>
-
-        <section class="workshop-panel" aria-label="工作间">
-          <div class="section-title">
-            <div>
-              <p class="eyebrow">Workshop</p>
-              <h2>工作间</h2>
-            </div>
-            <button id="unlockSlot" type="button" data-testid="unlock-slot">扩建</button>
-          </div>
-          <div id="workshop" class="workshop-scene" data-dropzone="workshop"></div>
-          <div class="tip-line">把羊拖进工作间就会持续产生金币；点击工作间里的羊可以送回牧场。</div>
-          <div class="boost-pill" id="boostBadge">普通速度</div>
-        </section>
+        <button id="resetGame" type="button" data-testid="reset-game">重开</button>
       </section>
 
       <section id="toast" class="toast" role="status" aria-live="polite"></section>
@@ -85,10 +53,8 @@
 
     <div id="modalBackdrop" class="modal-backdrop" hidden>
       <section class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
-        <div class="modal-head">
-          <h2 id="modalTitle">弹窗</h2>
-          <button id="closeModal" type="button" aria-label="关闭">关闭</button>
-        </div>
+        <button id="closeModal" class="modal-close" type="button" aria-label="关闭">×</button>
+        <h2 id="modalTitle">弹窗</h2>
         <div id="modalBody" class="modal-body"></div>
       </section>
     </div>
