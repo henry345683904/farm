@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>开心养羊场</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <main class="app-shell">
+      <section class="hero-panel" aria-label="开心养羊场">
+        <div class="hero-copy">
+          <p class="eyebrow">Flat Bush Mini Game</p>
+          <h1>开心养羊场</h1>
+          <p class="subtitle">买羊、合成、进工作间产金币，把小羊场养成金币工坊。</p>
+        </div>
+        <div class="hero-sheep" aria-hidden="true">
+          <div class="sun"></div>
+          <div class="hill hill-one"></div>
+          <div class="hill hill-two"></div>
+          <div class="big-sheep">
+            <span class="wool wool-a"></span>
+            <span class="wool wool-b"></span>
+            <span class="wool wool-c"></span>
+            <span class="face"></span>
+            <span class="leg leg-one"></span>
+            <span class="leg leg-two"></span>
+          </div>
+        </div>
+      </section>
+
+      <section class="hud-grid" aria-label="游戏数据">
+        <article class="stat">
+          <span>金币</span>
+          <strong id="coins">100</strong>
+        </article>
+        <article class="stat">
+          <span>每秒收入</span>
+          <strong id="income">0/s</strong>
+        </article>
+        <article class="stat">
+          <span>最高等级</span>
+          <strong id="maxLevel">1</strong>
+        </article>
+        <article class="stat">
+          <span>羊场名声</span>
+          <strong id="reputation">0</strong>
+        </article>
+      </section>
+
+      <section class="action-bar" aria-label="主要操作">
+        <button id="buySheep" class="primary-action" type="button" data-testid="buy-sheep">
+          <span>买 1 级羊</span>
+          <strong>50 金币</strong>
+        </button>
+        <button id="autoMerge" type="button" data-testid="auto-merge">一键合成</button>
+        <button id="collectBonus" type="button" data-testid="collect-bonus">领取羊毛订单</button>
+        <button id="feedBoost" type="button" data-testid="feed-boost">喂草加速</button>
+        <button id="resetGame" class="quiet" type="button" data-testid="reset-game">重开</button>
+      </section>
+
+      <section class="game-layout">
+        <section class="field-panel" aria-label="羊圈">
+          <div class="section-title">
+            <div>
+              <p class="eyebrow">Pasture</p>
+              <h2>羊圈</h2>
+            </div>
+            <span id="pastureCount">0/12</span>
+          </div>
+          <div id="pasture" class="slot-grid"></div>
+        </section>
+
+        <section class="field-panel workshop-panel" aria-label="工作间">
+          <div class="section-title">
+            <div>
+              <p class="eyebrow">Workshop</p>
+              <h2>工作间</h2>
+            </div>
+          <button id="unlockSlot" type="button" data-testid="unlock-slot">扩建</button>
+          </div>
+          <div id="workshop" class="slot-grid compact"></div>
+          <div class="tip-line">放进工作间的小羊会自动产金币。双击羊圈小羊可进工作间，点击工作间小羊可移回羊圈。</div>
+        </section>
+
+        <aside class="side-panel" aria-label="任务与图鉴">
+          <div class="section-title">
+            <div>
+              <p class="eyebrow">Quest</p>
+              <h2>今日目标</h2>
+            </div>
+            <span id="boostBadge">普通速度</span>
+          </div>
+          <div id="questList" class="quest-list"></div>
+
+          <div class="book">
+            <div class="section-title small">
+              <div>
+                <p class="eyebrow">Book</p>
+                <h2>小羊图鉴</h2>
+              </div>
+            </div>
+            <div id="sheepBook" class="sheep-book"></div>
+          </div>
+        </aside>
+      </section>
+
+      <section id="toast" class="toast" role="status" aria-live="polite"></section>
+    </main>
+
+    <script src="./game.js"></script>
+  </body>
+</html>
