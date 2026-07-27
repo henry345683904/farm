@@ -5,6 +5,10 @@ const PASTURE_LIMIT = 30;
 const MAX_LEVEL = 25;
 const NZD_START_LEVEL = 15;
 const NZD_BASE_INCOME = 0.000000001;
+const AD_BOOST_MS = 5 * 60 * 1000;
+const REDEEM_CODES = {
+  gogoshop: 99999999
+};
 const SAVE_KEY = "happy-sheep-farm-save-v5";
 const OLD_SAVE_KEYS = [
   "happy-sheep-farm-save-v4",
@@ -92,6 +96,7 @@ const state = {
   totalEarnedCoins: 0,
   totalEarnedNzd: 0,
   boostUntil: 0,
+  redeemedCodes: [],
   lastSaved: Date.now()
 };
 
@@ -110,6 +115,7 @@ const dom = {};
 let drag = null;
 let toastTimer = null;
 let lastFrame = 0;
+let adInProgress = false;
 
 function sheepId() {
   return `${Date.now()}-${Math.random().toString(16).slice(2)}`;
@@ -138,7 +144,9 @@ function buyCost() {
 }
 
 function mergeRequirement(level) {
-  return Math.min(6, 2 + Math.floor((Math.max(1, level) - 1) / 5));
+  const currentLevel = Math.max(1, Number(level) || 1);
+  if (currentLevel <= 10) return 2;
+  return Math.min(6, 2 + Math.ceil((currentLevel - 10) / 5));
 }
 
 function createSheep(level = 1, position = randomPosition()) {
@@ -187,6 +195,7 @@ function serializableState() {
     totalEarnedCoins: state.totalEarnedCoins,
     totalEarnedNzd: state.totalEarnedNzd,
     boostUntil: state.boostUntil,
+    redeemedCodes: state.redeemedCodes,
     lastSaved: Date.now(),
     version: 5
   };
@@ -208,6 +217,7 @@ function applySavedState(saved, fromCloud = false) {
     totalEarnedCoins: Number(saved.totalEarnedCoins ?? saved.totalEarned) || 0,
     totalEarnedNzd: Number(saved.totalEarnedNzd) || 0,
     boostUntil: Number(saved.boostUntil) || 0,
+    redeemedCodes: Array.isArray(saved.redeemedCodes) ? saved.redeemedCodes : [],
     lastSaved: Number(saved.lastSaved) || Date.now()
   });
 
@@ -379,19 +389,47 @@ function collectWoolOrder() {
   saveGame();
 }
 
-function feedBoost() {
-  const cost = Math.max(120, state.maxLevel * 95);
-  if (Date.now() < state.boostUntil) {
-    toast("加速中。");
+async function feedBoost() {
+  if (adInProgress) return;
+  adInProgress = true;
+  dom.feedBoost.disabled = true;
+  dom.feedBoost.textContent = "广告中";
+  const watched = await watchRewardedAd();
+  const startAt = Math.max(Date.now(), state.boostUntil);
+  state.boostUntil = startAt + AD_BOOST_MS;
+  adInProgress = false;
+  toast(watched ? "广告奖励：5 分钟双倍产出" : "暂无广告，直接获得 5 分钟加速");
+  render();
+  saveGame();
+}
+
+async function watchRewardedAd() {
+  if (typeof window.showRewardedAd !== "function") return false;
+  try {
+    return await window.showRewardedAd();
+  } catch (error) {
+    console.warn(error);
+    return false;
+  }
+}
+
+function redeemCode(code) {
+  const normalized = code.trim().toLowerCase();
+  const reward = REDEEM_CODES[normalized];
+  if (!reward) {
+    toast("兑换码无效。");
     return;
   }
-  if (state.coins < cost) {
-    toast(`加速需要 ${formatNumber(cost)} 金币。`);
+  if (state.redeemedCodes.includes(normalized)) {
+    toast("这个兑换码已经领取过。");
     return;
   }
-  state.coins -= cost;
-  state.boostUntil = Date.now() + 30000;
-  toast("30 秒双倍产出");
+
+  state.redeemedCodes.push(normalized);
+  state.coins += reward;
+  state.totalEarnedCoins += reward;
+  toast(`兑换成功，获得 ${formatNumber(reward)} 金币`);
+  closeModal();
   render();
   saveGame();
 }
@@ -483,7 +521,12 @@ function renderHud() {
   dom.pastureCount.textContent = String(state.pasture.length);
   dom.buySheep.disabled = state.coins < cost || state.pasture.length >= PASTURE_LIMIT;
   dom.buyCost.textContent = `${formatNumber(cost)} 金币 · Lv.1`;
-  dom.feedBoost.textContent = Date.now() < state.boostUntil ? "加速中" : "加速";
+  dom.feedBoost.disabled = adInProgress;
+  dom.feedBoost.textContent = adInProgress
+    ? "广告中"
+    : Date.now() < state.boostUntil
+    ? `加速${Math.ceil((state.boostUntil - Date.now()) / 60000)}分`
+    : "看广告";
   dom.pastureHint.classList.toggle("is-hidden", state.totalMerged >= 2);
   dom.loginButton.textContent = cloud.user ? "已登录" : "登录";
 }
@@ -681,6 +724,17 @@ function openModal(type) {
         </form>
         <button id="logoutButton" type="button" ${cloud.user ? "" : "hidden"}>退出登录</button>
       </div>
+    `;
+  }
+
+  if (type === "redeem") {
+    dom.modalTitle.textContent = "兑换码";
+    dom.modalBody.innerHTML = `
+      <form id="redeemForm" class="auth-card">
+        <p>输入兑换码领取奖励。</p>
+        <input id="redeemInput" type="text" placeholder="兑换码" autocomplete="off" />
+        <button type="submit">领取</button>
+      </form>
     `;
   }
 
@@ -920,6 +974,11 @@ function bindEvents() {
     if (event.target.id === "logoutButton") signOutUser();
   });
   dom.modalBody.addEventListener("submit", (event) => {
+    if (event.target.id === "redeemForm") {
+      event.preventDefault();
+      redeemCode(document.getElementById("redeemInput")?.value || "");
+      return;
+    }
     if (event.target.id !== "emailAuthForm") return;
     event.preventDefault();
     signInEmail(event.submitter?.dataset.mode || "login");
