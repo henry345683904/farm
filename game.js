@@ -113,6 +113,10 @@ const COPY = {
     balance: (amount) => `余额 ${amount}`,
     voucherNeed: (value) => `需要 NZ$${value}`,
     voucherEmpty: "兑换后会在这里显示代金券码。",
+    voucherCopyHint: "点击代金券码可自动复制",
+    voucherCopied: "代金券码已复制",
+    voucherCopyFail: "复制失败，请长按手动复制",
+    useVoucher: "去 GO GO SHOP 使用",
     levelUpTitle: "恭喜升级啦",
     levelUpBody: (earn, required) => `产出 ${earn}，下次升级需要 ${required} 只同级羊`,
     cloudLoaded: "云存档已加载",
@@ -219,6 +223,10 @@ const COPY = {
     balance: (amount) => `Balance ${amount}`,
     voucherNeed: (value) => `Needs NZ$${value}`,
     voucherEmpty: "Voucher codes will appear here after exchange.",
+    voucherCopyHint: "Tap a voucher code to copy it",
+    voucherCopied: "Voucher code copied",
+    voucherCopyFail: "Copy failed. Long press to copy manually",
+    useVoucher: "Use at GO GO SHOP",
     levelUpTitle: "Level Up",
     levelUpBody: (earn, required) => `Earns ${earn}. Next merge needs ${required} matching sheep.`,
     cloudLoaded: "Cloud save loaded",
@@ -918,6 +926,35 @@ function voucherLabel(voucher) {
     : voucher.label;
 }
 
+async function copyText(value) {
+  if (navigator.clipboard && window.isSecureContext) {
+    await navigator.clipboard.writeText(value);
+    return true;
+  }
+
+  const textarea = document.createElement("textarea");
+  textarea.value = value;
+  textarea.setAttribute("readonly", "");
+  textarea.style.position = "fixed";
+  textarea.style.left = "-9999px";
+  document.body.appendChild(textarea);
+  textarea.select();
+  const copied = document.execCommand("copy");
+  textarea.remove();
+  return copied;
+}
+
+async function copyVoucherCode(code) {
+  try {
+    await copyText(code);
+    toast(text("voucherCopied"));
+    feedback("reward");
+  } catch {
+    toast(text("voucherCopyFail"));
+    feedback("error");
+  }
+}
+
 function redeemVoucher(voucherId) {
   const voucher = VOUCHERS.find((item) => item.id === voucherId);
   if (!voucher) return;
@@ -1363,11 +1400,13 @@ function openModal(type) {
             ? state.vouchers.slice(0, 5).map((voucher) => `
               <div class="voucher-code">
                 <span>${voucher.label}</span>
-                <strong>${voucher.code}</strong>
+                <button type="button" data-copy-voucher="${voucher.code}">${voucher.code}</button>
               </div>
             `).join("")
             : `<p>${text("voucherEmpty")}</p>`}
         </div>
+        <small>${text("voucherCopyHint")}</small>
+        <button id="goGoShopButton" class="shop-link-button" type="button">${text("useVoucher")}</button>
       </div>
     `;
   }
@@ -1653,6 +1692,9 @@ function bindEvents() {
     if (event.target.id === "clearDataButton") openModal("reset-confirm");
     if (event.target.id === "confirmResetButton") resetGame();
     if (event.target.id === "cancelResetButton") openModal("settings");
+    if (event.target.id === "goGoShopButton") window.open("https://gogoshop.nz", "_blank", "noopener");
+    const copyButton = event.target.closest("[data-copy-voucher]");
+    if (copyButton) copyVoucherCode(copyButton.dataset.copyVoucher);
     const voucherButton = event.target.closest("[data-voucher]");
     if (voucherButton) redeemVoucher(voucherButton.dataset.voucher);
   });
