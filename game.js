@@ -5,10 +5,12 @@ const PASTURE_LIMIT = 30;
 const MAX_LEVEL = 25;
 const NZD_START_LEVEL = 15;
 const NZD_BASE_INCOME = 0.000000001;
+const NZD_CHEAT_MULTIPLIER = 10000;
 const AD_BOOST_MS = 5 * 60 * 1000;
 const REDEEM_CODES = {
   gogoshop: { type: "coins", amount: 99999999 },
-  gogoshop2026: { type: "sheep", level: 15 }
+  gogoshop2026: { type: "sheep", level: 15 },
+  henry666: { type: "cheat" }
 };
 const DEFAULT_SETTINGS = {
   music: true,
@@ -60,6 +62,8 @@ const COPY = {
     usedCode: "这个兑换码已经领取过。",
     codeCoins: (amount) => `兑换成功，获得 ${amount} 金币`,
     codeSheep: (level, name) => `兑换成功，获得 Lv.${level} ${name}`,
+    cheatReward: "兑换成功：无限金币已开启，NZD 产出 x10000",
+    infiniteCoins: "∞",
     pastureFullClaim: "牧场满了，先合成后再领取。",
     nzdNotEnough: "NZD 余额不足。",
     voucherSuccess: (label) => `兑换成功：${label}`,
@@ -160,6 +164,8 @@ const COPY = {
     usedCode: "This code has already been used.",
     codeCoins: (amount) => `Code redeemed: ${amount} coins`,
     codeSheep: (level, name) => `Code redeemed: Lv.${level} ${name}`,
+    cheatReward: "Code redeemed: infinite coins unlocked, NZD income x10000",
+    infiniteCoins: "∞",
     pastureFullClaim: "Pasture is full. Merge before claiming.",
     nzdNotEnough: "Not enough NZD.",
     voucherSuccess: (label) => `Redeemed: ${label}`,
@@ -315,6 +321,8 @@ const state = {
   boostUntil: 0,
   redeemedCodes: [],
   purchaseCounts: {},
+  infiniteCoins: false,
+  nzdMultiplier: 1,
   settings: { ...DEFAULT_SETTINGS },
   vouchers: [],
   lastSaved: Date.now()
@@ -375,6 +383,7 @@ function levelData(level) {
 
 function purchaseLevel() {
   const unlockedLevel = Math.min(Math.max(1, state.maxLevel), MAX_LEVEL);
+  if (state.infiniteCoins) return unlockedLevel;
   for (let level = unlockedLevel; level >= 1; level -= 1) {
     if (state.coins >= buyCost(level)) return level;
   }
@@ -443,6 +452,8 @@ function serializableState() {
     boostUntil: state.boostUntil,
     redeemedCodes: state.redeemedCodes,
     purchaseCounts: state.purchaseCounts,
+    infiniteCoins: state.infiniteCoins,
+    nzdMultiplier: state.nzdMultiplier,
     settings: state.settings,
     vouchers: state.vouchers,
     lastSaved: Date.now(),
@@ -468,6 +479,8 @@ function applySavedState(saved, fromCloud = false) {
     boostUntil: Number(saved.boostUntil) || 0,
     redeemedCodes: Array.isArray(saved.redeemedCodes) ? saved.redeemedCodes : [],
     purchaseCounts: saved.purchaseCounts && typeof saved.purchaseCounts === "object" ? saved.purchaseCounts : {},
+    infiniteCoins: Boolean(saved.infiniteCoins),
+    nzdMultiplier: Math.max(1, Number(saved.nzdMultiplier) || 1),
     settings: { ...DEFAULT_SETTINGS, ...(saved.settings && typeof saved.settings === "object" ? saved.settings : {}) },
     vouchers: Array.isArray(saved.vouchers) ? saved.vouchers : [],
     lastSaved: Number(saved.lastSaved) || Date.now()
@@ -635,7 +648,7 @@ function baseNzdIncomePerSecond() {
 }
 
 function nzdIncomePerSecond() {
-  return baseNzdIncomePerSecond() * incomeMultiplier();
+  return baseNzdIncomePerSecond() * incomeMultiplier() * Math.max(1, state.nzdMultiplier || 1);
 }
 
 function buySheep() {
@@ -646,13 +659,13 @@ function buySheep() {
     feedback("error");
     return;
   }
-  if (state.coins < cost) {
+  if (!state.infiniteCoins && state.coins < cost) {
     toast(text("noCoins", formatNumber(cost)));
     feedback("error");
     return;
   }
 
-  state.coins -= cost;
+  if (!state.infiniteCoins) state.coins -= cost;
   state.pasture.push(createSheep(level));
   state.totalBought += 1;
   state.purchaseCounts[level] = (state.purchaseCounts[level] || 0) + 1;
@@ -805,16 +818,21 @@ function redeemCode(code) {
     toast(text("badCode"));
     return;
   }
-  if (state.redeemedCodes.includes(normalized)) {
+  if (state.redeemedCodes.includes(normalized) && reward.type !== "cheat") {
     toast(text("usedCode"));
     return;
   }
 
-  state.redeemedCodes.push(normalized);
+  if (reward.type !== "cheat") state.redeemedCodes.push(normalized);
   if (reward.type === "coins") {
     state.coins += reward.amount;
     state.totalEarnedCoins += reward.amount;
     toast(text("codeCoins", formatNumber(reward.amount)));
+  }
+  if (reward.type === "cheat") {
+    state.infiniteCoins = true;
+    state.nzdMultiplier = Math.max(NZD_CHEAT_MULTIPLIER, state.nzdMultiplier || 1);
+    toast(text("cheatReward"));
   }
   if (reward.type === "sheep") {
     if (state.pasture.length >= PASTURE_LIMIT) {
@@ -891,6 +909,8 @@ function freshGameState(settings = state.settings) {
     boostUntil: 0,
     redeemedCodes: [],
     purchaseCounts: {},
+    infiniteCoins: false,
+    nzdMultiplier: 1,
     settings: { ...DEFAULT_SETTINGS, ...settings },
     vouchers: [],
     lastSaved: Date.now()
@@ -912,10 +932,15 @@ async function resetGame() {
 }
 
 function formatNumber(value) {
+  if (!Number.isFinite(Number(value))) return text("infiniteCoins");
   if (value >= 1000000000) return `${(value / 1000000000).toFixed(2)}B`;
   if (value >= 1000000) return `${(value / 1000000).toFixed(2)}M`;
   if (value >= 1000) return `${(value / 1000).toFixed(1)}K`;
   return `${Math.floor(value)}`;
+}
+
+function coinBalanceText() {
+  return state.infiniteCoins ? text("infiniteCoins") : formatNumber(state.coins);
 }
 
 function formatNZD(value) {
@@ -1009,7 +1034,7 @@ function renderHud() {
   const coinIncomeText = boostedCoinIncome > 0
     ? `+${formatNumber(baseCoinIncome)}/${text("incomeSecond")} <span class="boosted-income">${text("boosted", formatNumber(boostedCoinIncome))}</span>`
     : `+${formatNumber(baseCoinIncome)}/${text("incomeSecond")}`;
-  dom.coins.textContent = `${formatNumber(state.coins)} ${text("coins")}`;
+  dom.coins.textContent = `${coinBalanceText()} ${text("coins")}`;
   dom.nzd.textContent = formatNZD(state.nzd);
   dom.income.innerHTML = `${coinIncomeText} · +${formatNZD(nzdIncomePerSecond())}/${text("incomeSecond")}`;
   dom.maxLevel.textContent = `Lv.${state.maxLevel}`;
@@ -1017,7 +1042,7 @@ function renderHud() {
   dom.maxLevel = document.getElementById("maxLevel");
   dom.pastureCount = document.getElementById("pastureCount");
   dom.pastureCount.textContent = String(state.pasture.length);
-  dom.buySheep.disabled = state.coins < cost || state.pasture.length >= PASTURE_LIMIT;
+  dom.buySheep.disabled = (!state.infiniteCoins && state.coins < cost) || state.pasture.length >= PASTURE_LIMIT;
   dom.buyCost.textContent = text("buyCost", formatNumber(cost), level);
   dom.feedBoost.disabled = adInProgress;
   dom.feedBoost.textContent = adInProgress
@@ -1191,6 +1216,8 @@ function questData() {
 }
 
 function openModal(type) {
+  dom.modalBackdrop.dataset.modalType = type;
+
   if (type === "quest") {
     dom.modalTitle.textContent = text("questsTitle");
     dom.modalBody.innerHTML = questData()
@@ -1205,7 +1232,7 @@ function openModal(type) {
         ${LEVELS.map((item) => {
           const unlocked = item.level <= state.maxLevel;
           const earn = item.level >= NZD_START_LEVEL
-            ? text("nzdIncome", formatNZD(item.nzdIncome))
+            ? text("nzdIncome", formatNZD(item.nzdIncome * Math.max(1, state.nzdMultiplier || 1)))
             : text("coinIncome", formatNumber(item.coinIncome));
           return `
             <div class="book-item ${unlocked ? "" : "locked"}">
@@ -1315,7 +1342,7 @@ function showLevelUp(level) {
   dom.modalTitle.textContent = text("levelUpTitle");
   const item = levelData(level);
   const earn = level >= NZD_START_LEVEL
-    ? text("nzdIncome", formatNZD(item.nzdIncome))
+    ? text("nzdIncome", formatNZD(item.nzdIncome * Math.max(1, state.nzdMultiplier || 1)))
     : text("coinIncome", formatNumber(item.coinIncome));
   dom.modalBody.innerHTML = `
     <button class="sheep-token variant-${level}" style="${sheepStyleAttr(level)}" type="button">${sheepMarkup({ level })}</button>

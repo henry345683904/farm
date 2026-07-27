@@ -1117,6 +1117,22 @@ button {
   scrollbar-width: thin;
 }
 
+.modal-backdrop[data-modal-type="book"] .modal {
+  width: 94%;
+  max-height: 92%;
+  padding: 20px 12px 16px;
+}
+
+.modal-backdrop[data-modal-type="book"] .modal::before {
+  width: 72%;
+  height: 86px;
+}
+
+.modal-backdrop[data-modal-type="book"] .modal-body {
+  max-height: 72vh;
+  margin-top: 10px;
+}
+
 .modal-body > .sheep-token {
   position: relative;
   left: auto;
@@ -1157,17 +1173,20 @@ button {
 
 .sheep-book {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 8px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
 }
 
 .book-item {
-  min-height: 126px;
+  min-height: 178px;
   display: grid;
-  grid-template-rows: 62px auto auto auto;
+  grid-template-rows: 106px auto auto auto;
   align-items: center;
   justify-items: center;
-  gap: 3px;
+  gap: 4px;
+  padding: 8px;
+  border-radius: 8px;
+  overflow: hidden;
 }
 
 .book-item.locked {
@@ -1179,8 +1198,8 @@ button {
   position: relative;
   left: auto;
   top: auto;
-  width: 68px;
-  height: 60px;
+  width: 118px;
+  height: 102px;
   transform: none;
   pointer-events: none;
 }
