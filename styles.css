@@ -141,6 +141,22 @@ button {
   padding-top: 18px;
 }
 
+.language-toggle {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 15;
+  min-width: 38px;
+  min-height: 28px;
+  padding: 4px 8px;
+  border-radius: 999px;
+  color: #fff8d2;
+  font-size: 0.72rem;
+  font-weight: 950;
+  background: linear-gradient(180deg, #2b91d1, #12639c);
+  box-shadow: inset 0 -4px 0 rgba(8, 49, 88, 0.22), 0 6px 12px rgba(30, 67, 98, 0.2);
+}
+
 .level-line {
   font-size: clamp(0.92rem, 2.7vh, 1.28rem);
   font-weight: 800;
@@ -960,7 +976,7 @@ button {
 .utility-actions {
   position: absolute;
   left: 50%;
-  bottom: 16.1%;
+  bottom: 15.4%;
   z-index: 12;
   display: flex;
   gap: 8px;
@@ -970,31 +986,31 @@ button {
 .bottom-shop {
   position: absolute;
   left: 50%;
-  bottom: 5.4%;
+  bottom: 4.6%;
   z-index: 11;
-  width: 62%;
+  width: min(54%, 236px);
   transform: translateX(-50%);
 }
 
 .buy-button {
   position: relative;
   display: grid;
-  grid-template-columns: 32% 1fr;
+  grid-template-columns: 34% 1fr;
   align-items: center;
   width: 100%;
-  min-height: 74px;
-  padding: 8px 20px;
+  min-height: 58px;
+  padding: 6px 14px;
   border-radius: 999px;
   color: #8d3d06;
   text-align: center;
   background: linear-gradient(180deg, #fff56f 0%, #ffc321 48%, #f29b12 100%);
-  box-shadow: inset 0 7px 0 rgba(255, 255, 255, 0.38), inset 0 -7px 0 rgba(167, 82, 0, 0.2), 0 9px 0 #bf6b09;
+  box-shadow: inset 0 6px 0 rgba(255, 255, 255, 0.38), inset 0 -6px 0 rgba(167, 82, 0, 0.2), 0 7px 0 #bf6b09;
 }
 
 .buy-button strong {
   display: block;
   color: #fff;
-  font-size: clamp(1.22rem, 4vh, 2rem);
+  font-size: clamp(0.98rem, 3vh, 1.42rem);
   font-weight: 950;
   text-shadow: 0 2px 0 #9e4c0b, 0 -1px 0 #9e4c0b;
 }
@@ -1002,7 +1018,7 @@ button {
 .buy-button small {
   grid-column: 2;
   color: #9a5608;
-  font-size: clamp(0.72rem, 2vh, 0.95rem);
+  font-size: clamp(0.66rem, 1.75vh, 0.82rem);
   font-weight: 850;
 }
 
@@ -1010,16 +1026,16 @@ button {
   grid-row: span 2;
   display: grid;
   place-items: center;
-  min-height: 52px;
+  min-height: 42px;
   border-right: 2px solid rgba(168, 92, 4, 0.28);
-  font-size: clamp(0.82rem, 2.2vh, 1rem);
+  font-size: clamp(0.68rem, 1.8vh, 0.84rem);
   font-weight: 850;
 }
 
 .cart-icon::before {
   content: "🛒";
   display: block;
-  font-size: 1.9rem;
+  font-size: 1.45rem;
   line-height: 1;
 }
 
@@ -1238,7 +1254,7 @@ button {
   display: grid;
   gap: 9px;
   padding: 10px;
-  border-radius: 12px;
+  border-radius: 8px;
   color: #63340b;
   background: rgba(255, 238, 129, 0.94);
   text-shadow: none;

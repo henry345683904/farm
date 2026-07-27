@@ -15,7 +15,210 @@ const DEFAULT_SETTINGS = {
   sound: true,
   vibration: true,
   musicVolume: 45,
-  soundVolume: 70
+  soundVolume: 70,
+  language: "zh"
+};
+const COPY = {
+  zh: {
+    title: "开心养羊场",
+    stageLabel: "开心养羊场",
+    levelLine: (level, count) => `当前等级: ${level} 第${count}只羊`,
+    coins: "金币",
+    incomeSecond: "秒",
+    boosted: (value) => `(加速+${value})`,
+    withdraw: "提现",
+    quest: "任务",
+    book: "图鉴",
+    ad: "看广告",
+    adPlaying: "广告中",
+    boostLeft: (minutes) => `加速${minutes}分`,
+    redeem: "兑换",
+    settings: "设置",
+    login: "登录",
+    loggedIn: "已登录",
+    recycle: "回收",
+    autoMerge: "一键合成",
+    woolOrder: "羊毛订单",
+    shop: "商店",
+    quickBuy: "快速购买",
+    pastureHint: "牧场里的羊会自动产出。高等级升级需要更多同级羊，Lv.15 开始产 NZD。",
+    buyCost: (cost, level) => `${cost} 金币 · Lv.${level}`,
+    full: "牧场满了，先合成升级。",
+    noCoins: (cost) => `金币不够，需要 ${cost}。`,
+    bought: (level, name) => `购买成功：Lv.${level} ${name}`,
+    recycled: (level, value) => `回收 Lv.${level} 羊，获得 ${value} 金币`,
+    sameLevel: "相同等级才能合成。",
+    maxed: "已经是最高等级。",
+    needMerge: (level, required) => `Lv.${level} 升级需要 ${required} 只同级羊。`,
+    merged: (name) => `合成成功：${name}`,
+    noMerge: "没有足够数量的同级羊。",
+    orderWait: (seconds) => `订单还要 ${seconds} 秒`,
+    rewardCoins: (reward) => `获得 ${reward} 金币`,
+    adReward: "广告奖励：5 分钟双倍产出",
+    noAdReward: "暂无广告，直接获得 5 分钟加速",
+    badCode: "兑换码无效。",
+    usedCode: "这个兑换码已经领取过。",
+    codeCoins: (amount) => `兑换成功，获得 ${amount} 金币`,
+    codeSheep: (level, name) => `兑换成功，获得 Lv.${level} ${name}`,
+    pastureFullClaim: "牧场满了，先合成后再领取。",
+    nzdNotEnough: "NZD 余额不足。",
+    voucherSuccess: (label) => `兑换成功：${label}`,
+    resetConfirmTitle: "重新开始？",
+    resetConfirmText: "会清除本机存档、金币、羊和兑换记录。",
+    resetNow: "确认重开",
+    cancel: "取消",
+    resetDone: "已清除数据，重新开始。",
+    questsTitle: "今日任务",
+    questBuy: "买入 8 只羊",
+    questLv10: "解锁 Lv.10",
+    questNzd: "获得第一笔 NZD",
+    currentLevel: (level) => `当前 Lv.${level}`,
+    bookTitle: "羊羊图鉴",
+    unknown: "未发现",
+    mergeCount: (required) => `${required}只升`,
+    coinIncome: (amount) => `${amount} 金币/秒`,
+    nzdIncome: (amount) => `${amount}/秒`,
+    loginTitle: "登录存档",
+    firebaseLocal: "未配置 Firebase，先使用本地存档。",
+    firebaseLocalPlay: "未配置 Firebase，当前使用本地试玩存档。",
+    cloudInit: "云存档初始化中...",
+    cloudHint: "登录后会把进度保存到云端。",
+    signedIn: (name) => `已登录：${name}`,
+    googleLogin: "Google 登录",
+    email: "邮箱",
+    password: "密码 6 位以上",
+    emailLogin: "邮箱登录",
+    register: "注册",
+    logout: "退出登录",
+    redeemTitle: "兑换码",
+    redeemHint: "输入兑换码领取金币或稀有羊。",
+    redeemPlaceholder: "兑换码",
+    claim: "领取",
+    music: "音乐",
+    musicVolume: "音乐音量",
+    sound: "音效",
+    soundVolume: "音效音量",
+    vibration: "振动",
+    clearData: "清除数据重新开始",
+    withdrawTitle: "提现",
+    balance: (amount) => `余额 ${amount}`,
+    voucherNeed: (value) => `需要 NZ$${value}`,
+    voucherEmpty: "兑换后会在这里显示代金券码。",
+    levelUpTitle: "恭喜升级啦",
+    levelUpBody: (earn, required) => `产出 ${earn}，下次升级需要 ${required} 只同级羊`,
+    cloudLoaded: "云存档已加载",
+    cloudReadFail: "云存档读取失败",
+    cloudInitFail: "云存档初始化失败，当前使用本地存档。",
+    needFirebase: "需要先配置 Firebase。",
+    loginSuccess: "登录成功",
+    googleFail: "Google 登录失败",
+    needEmail: "请输入邮箱和密码。",
+    registerFail: "注册失败",
+    emailFail: "邮箱登录失败",
+    signedOut: "已退出登录",
+    close: "关闭",
+    modal: "弹窗"
+  },
+  en: {
+    title: "Happy Sheep Farm",
+    stageLabel: "Happy Sheep Farm",
+    levelLine: (level, count) => `Level: ${level} · Sheep ${count}`,
+    coins: "coins",
+    incomeSecond: "sec",
+    boosted: (value) => `(boost +${value})`,
+    withdraw: "Cash out",
+    quest: "Quests",
+    book: "Album",
+    ad: "Ad boost",
+    adPlaying: "Ad...",
+    boostLeft: (minutes) => `${minutes}m boost`,
+    redeem: "Code",
+    settings: "Settings",
+    login: "Login",
+    loggedIn: "Logged in",
+    recycle: "Sell",
+    autoMerge: "Merge",
+    woolOrder: "Order",
+    shop: "Shop",
+    quickBuy: "Quick buy",
+    pastureHint: "Sheep earn automatically in the pasture. Higher levels need more matching sheep. Lv.15 starts earning NZD.",
+    buyCost: (cost, level) => `${cost} coins · Lv.${level}`,
+    full: "Pasture is full. Merge some sheep first.",
+    noCoins: (cost) => `Not enough coins. Need ${cost}.`,
+    bought: (level, name) => `Bought Lv.${level} ${name}`,
+    recycled: (level, value) => `Sold Lv.${level} sheep for ${value} coins`,
+    sameLevel: "Only matching levels can merge.",
+    maxed: "This is already the max level.",
+    needMerge: (level, required) => `Lv.${level} needs ${required} matching sheep.`,
+    merged: (name) => `Merged: ${name}`,
+    noMerge: "No level has enough matching sheep.",
+    orderWait: (seconds) => `Order ready in ${seconds}s`,
+    rewardCoins: (reward) => `Got ${reward} coins`,
+    adReward: "Ad reward: 5 minutes double income",
+    noAdReward: "No ad available. 5 minute boost added",
+    badCode: "Invalid code.",
+    usedCode: "This code has already been used.",
+    codeCoins: (amount) => `Code redeemed: ${amount} coins`,
+    codeSheep: (level, name) => `Code redeemed: Lv.${level} ${name}`,
+    pastureFullClaim: "Pasture is full. Merge before claiming.",
+    nzdNotEnough: "Not enough NZD.",
+    voucherSuccess: (label) => `Redeemed: ${label}`,
+    resetConfirmTitle: "Start over?",
+    resetConfirmText: "This clears local save data, coins, sheep, and voucher history.",
+    resetNow: "Restart",
+    cancel: "Cancel",
+    resetDone: "Data cleared. Fresh start.",
+    questsTitle: "Daily Quests",
+    questBuy: "Buy 8 sheep",
+    questLv10: "Unlock Lv.10",
+    questNzd: "Earn first NZD",
+    currentLevel: (level) => `Current Lv.${level}`,
+    bookTitle: "Sheep Album",
+    unknown: "Unknown",
+    mergeCount: (required) => `${required} to merge`,
+    coinIncome: (amount) => `${amount} coins/sec`,
+    nzdIncome: (amount) => `${amount}/sec`,
+    loginTitle: "Cloud Save",
+    firebaseLocal: "Firebase is not configured. Local save is active.",
+    firebaseLocalPlay: "Firebase is not configured. Using local save.",
+    cloudInit: "Cloud save is starting...",
+    cloudHint: "Login to save progress to the cloud.",
+    signedIn: (name) => `Signed in: ${name}`,
+    googleLogin: "Google login",
+    email: "Email",
+    password: "Password, 6+ chars",
+    emailLogin: "Email login",
+    register: "Register",
+    logout: "Logout",
+    redeemTitle: "Redeem Code",
+    redeemHint: "Enter a code for coins or a rare sheep.",
+    redeemPlaceholder: "Code",
+    claim: "Claim",
+    music: "Music",
+    musicVolume: "Music volume",
+    sound: "SFX",
+    soundVolume: "SFX volume",
+    vibration: "Vibration",
+    clearData: "Clear data and restart",
+    withdrawTitle: "Cash Out",
+    balance: (amount) => `Balance ${amount}`,
+    voucherNeed: (value) => `Needs NZ$${value}`,
+    voucherEmpty: "Voucher codes will appear here after exchange.",
+    levelUpTitle: "Level Up",
+    levelUpBody: (earn, required) => `Earns ${earn}. Next merge needs ${required} matching sheep.`,
+    cloudLoaded: "Cloud save loaded",
+    cloudReadFail: "Cloud save read failed",
+    cloudInitFail: "Cloud save failed. Using local save.",
+    needFirebase: "Firebase must be configured first.",
+    loginSuccess: "Login success",
+    googleFail: "Google login failed",
+    needEmail: "Enter email and password.",
+    registerFail: "Register failed",
+    emailFail: "Email login failed",
+    signedOut: "Signed out",
+    close: "Close",
+    modal: "Modal"
+  }
 };
 const VOUCHERS = [
   { id: "gogo-1", label: "GO GO SHOP $1 代金券", value: 1 },
@@ -134,6 +337,21 @@ let lastFrame = 0;
 let adInProgress = false;
 let audioContext = null;
 let musicTimer = null;
+let audioUnlocked = false;
+let musicStep = 0;
+
+function i18n() {
+  return COPY[state.settings.language === "en" ? "en" : "zh"];
+}
+
+function text(key, ...args) {
+  const value = i18n()[key] ?? COPY.zh[key] ?? key;
+  return typeof value === "function" ? value(...args) : value;
+}
+
+function currentLanguage() {
+  return state.settings.language === "en" ? "en" : "zh";
+}
 
 function sheepId() {
   return `${Date.now()}-${Math.random().toString(16).slice(2)}`;
@@ -157,7 +375,11 @@ function levelData(level) {
 }
 
 function purchaseLevel() {
-  return Math.min(Math.max(1, state.maxLevel), MAX_LEVEL);
+  const unlockedLevel = Math.min(Math.max(1, state.maxLevel), MAX_LEVEL);
+  for (let level = unlockedLevel; level >= 1; level -= 1) {
+    if (state.coins >= buyCost(level)) return level;
+  }
+  return 1;
 }
 
 function buyCost(level = purchaseLevel()) {
@@ -276,7 +498,7 @@ function applyOfflineIncome() {
     state.totalEarnedNzd += offlineNzd;
   }
   if (offlineCoins > 0 || offlineNzd > 0) {
-    toast(`离线收益 +${formatNumber(offlineCoins)} 金币 ${formatNZD(offlineNzd)}`);
+    toast(`Offline +${formatNumber(offlineCoins)} ${text("coins")} ${formatNZD(offlineNzd)}`);
   }
 }
 
@@ -304,40 +526,47 @@ function ensureAudioContext() {
   if (!audioContext) {
     audioContext = new (window.AudioContext || window.webkitAudioContext)();
   }
+  if (audioContext.state === "suspended") audioContext.resume();
   return audioContext;
 }
 
-function playTone(frequency = 520, duration = 0.08, gain = 0.08) {
+function playTone(frequency = 520, duration = 0.08, gain = 0.08, type = "sine", delay = 0) {
   if (!state.settings.sound) return;
   try {
     const context = ensureAudioContext();
     const oscillator = context.createOscillator();
     const volume = context.createGain();
+    const startAt = context.currentTime + delay;
     oscillator.frequency.value = frequency;
-    oscillator.type = "sine";
-    volume.gain.value = gain * (state.settings.soundVolume / 100);
+    oscillator.type = type;
+    volume.gain.setValueAtTime(0.0001, startAt);
+    volume.gain.exponentialRampToValueAtTime(Math.max(0.0001, gain * (state.settings.soundVolume / 100)), startAt + 0.012);
+    volume.gain.exponentialRampToValueAtTime(0.0001, startAt + duration);
     oscillator.connect(volume);
     volume.connect(context.destination);
-    oscillator.start();
-    oscillator.stop(context.currentTime + duration);
+    oscillator.start(startAt);
+    oscillator.stop(startAt + duration + 0.02);
   } catch {
     // Audio can be blocked before user interaction; ignore silently.
   }
 }
 
-function playMusicTone(frequency = 196, duration = 0.05, gain = 0.025) {
+function playMusicTone(frequency = 196, duration = 0.24, gain = 0.032) {
   if (!state.settings.music) return;
   try {
     const context = ensureAudioContext();
     const oscillator = context.createOscillator();
     const volume = context.createGain();
+    const startAt = context.currentTime;
     oscillator.frequency.value = frequency;
     oscillator.type = "triangle";
-    volume.gain.value = gain * (state.settings.musicVolume / 100);
+    volume.gain.setValueAtTime(0.0001, startAt);
+    volume.gain.exponentialRampToValueAtTime(Math.max(0.0001, gain * (state.settings.musicVolume / 100)), startAt + 0.03);
+    volume.gain.exponentialRampToValueAtTime(0.0001, startAt + duration);
     oscillator.connect(volume);
     volume.connect(context.destination);
-    oscillator.start();
-    oscillator.stop(context.currentTime + duration);
+    oscillator.start(startAt);
+    oscillator.stop(startAt + duration + 0.04);
   } catch {
     // Browsers may block audio until the first tap.
   }
@@ -346,23 +575,39 @@ function playMusicTone(frequency = 196, duration = 0.05, gain = 0.025) {
 function syncMusic() {
   clearInterval(musicTimer);
   musicTimer = null;
-  if (!state.settings.music) return;
+  if (!state.settings.music || !audioUnlocked) return;
+  const melody = [261.63, 329.63, 392.0, 329.63, 293.66, 349.23, 440.0, 392.0];
   musicTimer = setInterval(() => {
     if (document.hidden || !state.settings.music) return;
-    playMusicTone();
-  }, 2400);
+    playMusicTone(melody[musicStep % melody.length]);
+    musicStep += 1;
+  }, 640);
+}
+
+function unlockAudio() {
+  if (audioUnlocked) return;
+  try {
+    ensureAudioContext();
+    audioUnlocked = true;
+    syncMusic();
+  } catch {
+    // Keep the game playable if audio is unavailable.
+  }
 }
 
 function feedback(kind = "tap") {
-  const tones = {
-    tap: 440,
-    buy: 520,
-    merge: 720,
-    sell: 300,
-    reward: 840,
-    error: 180
+  unlockAudio();
+  const effects = {
+    tap: [[440, 0.045, 0.045, "triangle", 0]],
+    buy: [[523.25, 0.07, 0.06, "sine", 0], [659.25, 0.09, 0.05, "sine", 0.055]],
+    merge: [[523.25, 0.06, 0.055, "triangle", 0], [659.25, 0.07, 0.055, "triangle", 0.055], [783.99, 0.11, 0.055, "triangle", 0.11]],
+    sell: [[246.94, 0.07, 0.055, "sawtooth", 0], [196, 0.08, 0.04, "sawtooth", 0.06]],
+    reward: [[659.25, 0.08, 0.05, "triangle", 0], [880, 0.12, 0.055, "triangle", 0.08]],
+    error: [[174.61, 0.1, 0.05, "square", 0]]
   };
-  playTone(tones[kind] || tones.tap);
+  (effects[kind] || effects.tap).forEach(([frequency, duration, gain, type, delay]) => {
+    playTone(frequency, duration, gain, type, delay);
+  });
   vibrate(kind === "error" ? [20, 30, 20] : 18);
 }
 
@@ -398,12 +643,12 @@ function buySheep() {
   const level = purchaseLevel();
   const cost = buyCost(level);
   if (state.pasture.length >= PASTURE_LIMIT) {
-    toast("牧场满了，先合成升级。");
+    toast(text("full"));
     feedback("error");
     return;
   }
   if (state.coins < cost) {
-    toast(`金币不够，需要 ${formatNumber(cost)}。`);
+    toast(text("noCoins", formatNumber(cost)));
     feedback("error");
     return;
   }
@@ -412,7 +657,7 @@ function buySheep() {
   state.pasture.push(createSheep(level));
   state.totalBought += 1;
   state.purchaseCounts[level] = (state.purchaseCounts[level] || 0) + 1;
-  toast(`购买成功：Lv.${level} ${levelData(level).name}`);
+  toast(text("bought", level, levelData(level).name));
   feedback("buy");
   render();
   saveGame();
@@ -429,7 +674,7 @@ function recycleSheep(index) {
   state.pasture.splice(index, 1);
   state.coins += value;
   state.totalEarnedCoins += value;
-  toast(`回收 Lv.${sheep.level} 羊，获得 ${formatNumber(value)} 金币`);
+  toast(text("recycled", sheep.level, formatNumber(value)));
   feedback("sell");
   render();
   saveGame();
@@ -441,12 +686,12 @@ function mergeSheep(sourceIndex, targetIndex) {
   const target = state.pasture[targetIndex];
   if (!source || !target || sourceIndex === targetIndex) return false;
   if (source.level !== target.level) {
-    toast("相同等级才能合成。");
+    toast(text("sameLevel"));
     feedback("error");
     return false;
   }
   if (source.level >= MAX_LEVEL) {
-    toast("已经是最高等级。");
+    toast(text("maxed"));
     feedback("error");
     return false;
   }
@@ -458,7 +703,7 @@ function mergeSheep(sourceIndex, targetIndex) {
     .map((item) => item.index);
 
   if (sameLevelIndexes.length < required) {
-    toast(`Lv.${source.level} 升级需要 ${required} 只同级羊。`);
+    toast(text("needMerge", source.level, required));
     feedback("error");
     return false;
   }
@@ -492,7 +737,7 @@ function mergeSheep(sourceIndex, targetIndex) {
     feedback("merge");
     showLevelUp(nextLevel);
   } else {
-    toast(`合成成功：${levelData(nextLevel).name}`);
+    toast(text("merged", levelData(nextLevel).name));
     feedback("merge");
   }
   return true;
@@ -509,7 +754,7 @@ function autoMerge() {
       return;
     }
   }
-  toast("没有足够数量的同级羊。");
+  toast(text("noMerge"));
 }
 
 function collectWoolOrder() {
@@ -518,14 +763,14 @@ function collectWoolOrder() {
   const last = Number(localStorage.getItem(cooldownKey)) || 0;
   const waitMs = 90000;
   if (Date.now() - last < waitMs) {
-    toast(`订单还要 ${Math.ceil((waitMs - (Date.now() - last)) / 1000)} 秒`);
+    toast(text("orderWait", Math.ceil((waitMs - (Date.now() - last)) / 1000)));
     return;
   }
   state.coins += reward;
   state.reputation += 5;
   state.totalEarnedCoins += reward;
   localStorage.setItem(cooldownKey, String(Date.now()));
-  toast(`获得 ${formatNumber(reward)} 金币`);
+  toast(text("rewardCoins", formatNumber(reward)));
   render();
   saveGame();
 }
@@ -534,12 +779,12 @@ async function feedBoost() {
   if (adInProgress) return;
   adInProgress = true;
   dom.feedBoost.disabled = true;
-  dom.feedBoost.textContent = "广告中";
+  dom.feedBoost.textContent = text("adPlaying");
   const watched = await watchRewardedAd();
   const startAt = Math.max(Date.now(), state.boostUntil);
   state.boostUntil = startAt + AD_BOOST_MS;
   adInProgress = false;
-  toast(watched ? "广告奖励：5 分钟双倍产出" : "暂无广告，直接获得 5 分钟加速");
+  toast(watched ? text("adReward") : text("noAdReward"));
   render();
   saveGame();
 }
@@ -558,11 +803,11 @@ function redeemCode(code) {
   const normalized = code.trim().toLowerCase();
   const reward = REDEEM_CODES[normalized];
   if (!reward) {
-    toast("兑换码无效。");
+    toast(text("badCode"));
     return;
   }
   if (state.redeemedCodes.includes(normalized)) {
-    toast("这个兑换码已经领取过。");
+    toast(text("usedCode"));
     return;
   }
 
@@ -570,17 +815,17 @@ function redeemCode(code) {
   if (reward.type === "coins") {
     state.coins += reward.amount;
     state.totalEarnedCoins += reward.amount;
-    toast(`兑换成功，获得 ${formatNumber(reward.amount)} 金币`);
+    toast(text("codeCoins", formatNumber(reward.amount)));
   }
   if (reward.type === "sheep") {
     if (state.pasture.length >= PASTURE_LIMIT) {
       state.redeemedCodes = state.redeemedCodes.filter((item) => item !== normalized);
-      toast("牧场满了，先合成后再领取。");
+      toast(text("pastureFullClaim"));
       return;
     }
     state.pasture.push(createSheep(reward.level));
     state.maxLevel = Math.max(state.maxLevel, reward.level);
-    toast(`兑换成功，获得 Lv.${reward.level} ${levelData(reward.level).name}`);
+    toast(text("codeSheep", reward.level, levelData(reward.level).name));
   }
   closeModal();
   render();
@@ -590,19 +835,30 @@ function redeemCode(code) {
 function updateSetting(key, value) {
   state.settings[key] = value;
   if (key === "music" || key === "musicVolume") syncMusic();
+  if (key === "language") render();
   feedback("tap");
   saveGame();
+}
+
+function toggleLanguage() {
+  updateSetting("language", currentLanguage() === "en" ? "zh" : "en");
 }
 
 function voucherCode(value) {
   return `GOGO-${value}-${Math.random().toString(36).slice(2, 8).toUpperCase()}`;
 }
 
+function voucherLabel(voucher) {
+  return currentLanguage() === "en"
+    ? `GO GO SHOP $${voucher.value} voucher`
+    : voucher.label;
+}
+
 function redeemVoucher(voucherId) {
   const voucher = VOUCHERS.find((item) => item.id === voucherId);
   if (!voucher) return;
   if (state.nzd < voucher.value) {
-    toast("NZD 余额不足。");
+    toast(text("nzdNotEnough"));
     feedback("error");
     return;
   }
@@ -615,20 +871,45 @@ function redeemVoucher(voucherId) {
     value: voucher.value,
     createdAt: Date.now()
   });
-  toast(`兑换成功：${voucher.label}`);
+  toast(text("voucherSuccess", voucherLabel(voucher)));
   feedback("reward");
   openModal("withdraw");
   render();
   saveGame();
 }
 
-function resetGame() {
-  if (!window.confirm("确定重开吗？")) return;
+function freshGameState(settings = state.settings) {
+  return {
+    coins: 100,
+    nzd: 0,
+    reputation: 0,
+    pasture: [],
+    maxLevel: 1,
+    totalBought: 0,
+    totalMerged: 0,
+    totalEarnedCoins: 0,
+    totalEarnedNzd: 0,
+    boostUntil: 0,
+    redeemedCodes: [],
+    purchaseCounts: {},
+    settings: { ...DEFAULT_SETTINGS, ...settings },
+    vouchers: [],
+    lastSaved: Date.now()
+  };
+}
+
+async function resetGame() {
+  Object.assign(state, freshGameState());
   localStorage.removeItem(SAVE_KEY);
   OLD_SAVE_KEYS.forEach((key) => localStorage.removeItem(key));
   localStorage.removeItem("happy-sheep-order-time");
   localStorage.removeItem("happy-sheep-quest-flags");
-  window.location.reload();
+  closeModal();
+  render();
+  saveGame();
+  if (cloud.enabled && cloud.user) await saveCloudGame(true);
+  toast(text("resetDone"));
+  feedback("reward");
 }
 
 function formatNumber(value) {
@@ -700,29 +981,53 @@ function renderPasture() {
   });
 }
 
+function renderStaticText() {
+  document.documentElement.lang = currentLanguage() === "en" ? "en" : "zh-CN";
+  document.title = text("title");
+  dom.stage.setAttribute("aria-label", text("stageLabel"));
+  dom.withdrawButton.textContent = text("withdraw");
+  dom.languageToggle.textContent = currentLanguage() === "en" ? "中" : "EN";
+  document.querySelector('[data-modal="quest"]').textContent = text("quest");
+  document.querySelector('[data-modal="book"]').textContent = text("book");
+  document.querySelector('[data-modal="redeem"]').textContent = text("redeem");
+  document.querySelector('[data-modal="settings"]').textContent = text("settings");
+  dom.autoMerge.textContent = text("autoMerge");
+  dom.collectBonus.textContent = text("woolOrder");
+  dom.pastureHint.textContent = text("pastureHint");
+  dom.buySheep.querySelector(".cart-icon").textContent = text("shop");
+  dom.buySheep.querySelector("strong").textContent = text("quickBuy");
+  dom.closeModal.setAttribute("aria-label", text("close"));
+  dom.recycleBin.setAttribute("aria-label", text("recycle"));
+  dom.recycleBin.querySelector(".bin-body").textContent = text("recycle");
+}
+
 function renderHud() {
+  renderStaticText();
   const level = purchaseLevel();
   const cost = buyCost(level);
   const baseCoinIncome = baseCoinIncomePerSecond();
   const boostedCoinIncome = boostedCoinIncomePerSecond();
   const coinIncomeText = boostedCoinIncome > 0
-    ? `+${formatNumber(baseCoinIncome)}/秒 <span class="boosted-income">(加速+${formatNumber(boostedCoinIncome)})</span>`
-    : `+${formatNumber(baseCoinIncome)}/秒`;
-  dom.coins.textContent = `${formatNumber(state.coins)} 金币`;
+    ? `+${formatNumber(baseCoinIncome)}/${text("incomeSecond")} <span class="boosted-income">${text("boosted", formatNumber(boostedCoinIncome))}</span>`
+    : `+${formatNumber(baseCoinIncome)}/${text("incomeSecond")}`;
+  dom.coins.textContent = `${formatNumber(state.coins)} ${text("coins")}`;
   dom.nzd.textContent = formatNZD(state.nzd);
-  dom.income.innerHTML = `${coinIncomeText} · +${formatNZD(nzdIncomePerSecond())}/秒`;
+  dom.income.innerHTML = `${coinIncomeText} · +${formatNZD(nzdIncomePerSecond())}/${text("incomeSecond")}`;
   dom.maxLevel.textContent = `Lv.${state.maxLevel}`;
+  dom.maxLevel.parentElement.innerHTML = text("levelLine", `<strong id="maxLevel">Lv.${state.maxLevel}</strong>`, `<span id="pastureCount">${state.pasture.length}</span>`);
+  dom.maxLevel = document.getElementById("maxLevel");
+  dom.pastureCount = document.getElementById("pastureCount");
   dom.pastureCount.textContent = String(state.pasture.length);
   dom.buySheep.disabled = state.coins < cost || state.pasture.length >= PASTURE_LIMIT;
-  dom.buyCost.textContent = `${formatNumber(cost)} 金币 · Lv.${level}`;
+  dom.buyCost.textContent = text("buyCost", formatNumber(cost), level);
   dom.feedBoost.disabled = adInProgress;
   dom.feedBoost.textContent = adInProgress
-    ? "广告中"
+    ? text("adPlaying")
     : Date.now() < state.boostUntil
-    ? `加速${Math.ceil((state.boostUntil - Date.now()) / 60000)}分`
-    : "看广告";
+    ? text("boostLeft", Math.ceil((state.boostUntil - Date.now()) / 60000))
+    : text("ad");
   dom.pastureHint.classList.toggle("is-hidden", state.totalMerged >= 2);
-  dom.loginButton.textContent = cloud.user ? "已登录" : "登录";
+  dom.loginButton.textContent = cloud.user ? text("loggedIn") : text("login");
 }
 
 function render() {
@@ -880,34 +1185,34 @@ function clearTargets() {
 
 function questData() {
   return [
-    { title: "买入 8 只羊", done: state.totalBought >= 8, progress: `${Math.min(state.totalBought, 8)}/8` },
-    { title: "解锁 Lv.10", done: state.maxLevel >= 10, progress: `当前 Lv.${state.maxLevel}` },
-    { title: "获得第一笔 NZD", done: state.nzd > 0, progress: formatNZD(state.nzd) }
+    { title: text("questBuy"), done: state.totalBought >= 8, progress: `${Math.min(state.totalBought, 8)}/8` },
+    { title: text("questLv10"), done: state.maxLevel >= 10, progress: text("currentLevel", state.maxLevel) },
+    { title: text("questNzd"), done: state.nzd > 0, progress: formatNZD(state.nzd) }
   ];
 }
 
 function openModal(type) {
   if (type === "quest") {
-    dom.modalTitle.textContent = "今日任务";
+    dom.modalTitle.textContent = text("questsTitle");
     dom.modalBody.innerHTML = questData()
       .map((quest) => `<div class="quest ${quest.done ? "done" : ""}"><strong>${quest.title}</strong><span>${quest.progress}</span></div>`)
       .join("");
   }
 
   if (type === "book") {
-    dom.modalTitle.textContent = "羊羊图鉴";
+    dom.modalTitle.textContent = text("bookTitle");
     dom.modalBody.innerHTML = `
       <div class="sheep-book">
         ${LEVELS.map((item) => {
           const unlocked = item.level <= state.maxLevel;
           const earn = item.level >= NZD_START_LEVEL
-            ? `${formatNZD(item.nzdIncome)}/秒`
-            : `${formatNumber(item.coinIncome)} 金币/秒`;
+            ? text("nzdIncome", formatNZD(item.nzdIncome))
+            : text("coinIncome", formatNumber(item.coinIncome));
           return `
             <div class="book-item ${unlocked ? "" : "locked"}">
               <span class="book-preview sheep-token variant-${item.level}" style="${sheepStyleAttr(item.level)}">${sheepMarkup({ level: item.level })}</span>
-              <strong>${unlocked ? item.name : "未发现"}</strong>
-              <span>Lv.${item.level} · ${mergeRequirement(item.level)}只升</span>
+              <strong>${unlocked ? item.name : text("unknown")}</strong>
+              <span>Lv.${item.level} · ${text("mergeCount", mergeRequirement(item.level))}</span>
               <span>${earn}</span>
             </div>
           `;
@@ -917,59 +1222,59 @@ function openModal(type) {
   }
 
   if (type === "login") {
-    dom.modalTitle.textContent = "登录存档";
+    dom.modalTitle.textContent = text("loginTitle");
     dom.modalBody.innerHTML = `
       <div class="auth-card">
         <p id="authStatus">${authStatusText()}</p>
-        <button id="googleLogin" type="button">Google 登录</button>
+        <button id="googleLogin" type="button">${text("googleLogin")}</button>
         <form id="emailAuthForm" class="auth-form">
-          <input id="emailInput" type="email" placeholder="邮箱" autocomplete="email" />
-          <input id="passwordInput" type="password" placeholder="密码 6 位以上" autocomplete="current-password" />
+          <input id="emailInput" type="email" placeholder="${text("email")}" autocomplete="email" />
+          <input id="passwordInput" type="password" placeholder="${text("password")}" autocomplete="current-password" />
           <div class="auth-actions">
-            <button id="emailLogin" type="submit" data-mode="login">邮箱登录</button>
-            <button id="emailRegister" type="submit" data-mode="register">注册</button>
+            <button id="emailLogin" type="submit" data-mode="login">${text("emailLogin")}</button>
+            <button id="emailRegister" type="submit" data-mode="register">${text("register")}</button>
           </div>
         </form>
-        <button id="logoutButton" type="button" ${cloud.user ? "" : "hidden"}>退出登录</button>
+        <button id="logoutButton" type="button" ${cloud.user ? "" : "hidden"}>${text("logout")}</button>
       </div>
     `;
   }
 
   if (type === "redeem") {
-    dom.modalTitle.textContent = "兑换码";
+    dom.modalTitle.textContent = text("redeemTitle");
     dom.modalBody.innerHTML = `
       <form id="redeemForm" class="auth-card">
-        <p>输入兑换码领取金币或稀有羊。</p>
-        <input id="redeemInput" type="text" placeholder="兑换码" autocomplete="off" />
-        <button type="submit">领取</button>
+        <p>${text("redeemHint")}</p>
+        <input id="redeemInput" type="text" placeholder="${text("redeemPlaceholder")}" autocomplete="off" />
+        <button type="submit">${text("claim")}</button>
       </form>
     `;
   }
 
   if (type === "settings") {
-    dom.modalTitle.textContent = "设置";
+    dom.modalTitle.textContent = text("settings");
     dom.modalBody.innerHTML = `
       <div class="settings-card">
-        <label><span>音乐</span><input data-setting="music" type="checkbox" ${state.settings.music ? "checked" : ""} /></label>
-        <label><span>音乐音量</span><input data-setting="musicVolume" type="range" min="0" max="100" value="${state.settings.musicVolume}" /></label>
-        <label><span>音效</span><input data-setting="sound" type="checkbox" ${state.settings.sound ? "checked" : ""} /></label>
-        <label><span>音效音量</span><input data-setting="soundVolume" type="range" min="0" max="100" value="${state.settings.soundVolume}" /></label>
-        <label><span>振动</span><input data-setting="vibration" type="checkbox" ${state.settings.vibration ? "checked" : ""} /></label>
-        <button id="clearDataButton" class="danger-action" type="button">清除数据重新开始</button>
+        <label><span>${text("music")}</span><input data-setting="music" type="checkbox" ${state.settings.music ? "checked" : ""} /></label>
+        <label><span>${text("musicVolume")}</span><input data-setting="musicVolume" type="range" min="0" max="100" value="${state.settings.musicVolume}" /></label>
+        <label><span>${text("sound")}</span><input data-setting="sound" type="checkbox" ${state.settings.sound ? "checked" : ""} /></label>
+        <label><span>${text("soundVolume")}</span><input data-setting="soundVolume" type="range" min="0" max="100" value="${state.settings.soundVolume}" /></label>
+        <label><span>${text("vibration")}</span><input data-setting="vibration" type="checkbox" ${state.settings.vibration ? "checked" : ""} /></label>
+        <button id="clearDataButton" class="danger-action" type="button">${text("clearData")}</button>
       </div>
     `;
   }
 
   if (type === "withdraw") {
-    dom.modalTitle.textContent = "提现";
+    dom.modalTitle.textContent = text("withdrawTitle");
     dom.modalBody.innerHTML = `
       <div class="withdraw-card">
-        <strong>余额 ${formatNZD(state.nzd)}</strong>
+        <strong>${text("balance", formatNZD(state.nzd))}</strong>
         <div class="voucher-list">
           ${VOUCHERS.map((voucher) => `
             <button type="button" data-voucher="${voucher.id}" ${state.nzd < voucher.value ? "disabled" : ""}>
-              ${voucher.label}
-              <span>需要 NZ$${voucher.value}</span>
+              ${voucherLabel(voucher)}
+              <span>${text("voucherNeed", voucher.value)}</span>
             </button>
           `).join("")}
         </div>
@@ -981,7 +1286,20 @@ function openModal(type) {
                 <strong>${voucher.code}</strong>
               </div>
             `).join("")
-            : "<p>兑换后会在这里显示代金券码。</p>"}
+            : `<p>${text("voucherEmpty")}</p>`}
+        </div>
+      </div>
+    `;
+  }
+
+  if (type === "reset-confirm") {
+    dom.modalTitle.textContent = text("resetConfirmTitle");
+    dom.modalBody.innerHTML = `
+      <div class="auth-card">
+        <p>${text("resetConfirmText")}</p>
+        <div class="auth-actions">
+          <button id="confirmResetButton" class="danger-action" type="button">${text("resetNow")}</button>
+          <button id="cancelResetButton" type="button">${text("cancel")}</button>
         </div>
       </div>
     `;
@@ -995,15 +1313,15 @@ function closeModal() {
 }
 
 function showLevelUp(level) {
-  dom.modalTitle.textContent = "恭喜升级啦";
+  dom.modalTitle.textContent = text("levelUpTitle");
   const item = levelData(level);
   const earn = level >= NZD_START_LEVEL
-    ? `${formatNZD(item.nzdIncome)}/秒`
-    : `${formatNumber(item.coinIncome)} 金币/秒`;
+    ? text("nzdIncome", formatNZD(item.nzdIncome))
+    : text("coinIncome", formatNumber(item.coinIncome));
   dom.modalBody.innerHTML = `
     <button class="sheep-token variant-${level}" style="${sheepStyleAttr(level)}" type="button">${sheepMarkup({ level })}</button>
     <div>Lv.${level} ${item.name}</div>
-    <div>产出 ${earn}，下次升级需要 ${mergeRequirement(level)} 只同级羊</div>
+    <div>${text("levelUpBody", earn, mergeRequirement(level))}</div>
   `;
   dom.modalBackdrop.hidden = false;
 }
@@ -1037,7 +1355,7 @@ function hasFirebaseConfig() {
 async function setupCloudSave() {
   if (!hasFirebaseConfig()) {
     cloud.ready = true;
-    updateAuthStatus("未配置 Firebase，当前使用本地试玩存档。");
+    updateAuthStatus(text("firebaseLocalPlay"));
     return;
   }
 
@@ -1063,16 +1381,16 @@ async function setupCloudSave() {
     });
   } catch (error) {
     cloud.ready = true;
-    updateAuthStatus("云存档初始化失败，当前使用本地存档。");
+    updateAuthStatus(text("cloudInitFail"));
     console.error(error);
   }
 }
 
 function authStatusText() {
-  if (!hasFirebaseConfig()) return "未配置 Firebase，先使用本地存档。";
-  if (!cloud.enabled) return "云存档初始化中...";
-  if (!cloud.user) return "登录后会把进度保存到云端。";
-  return `已登录：${cloud.user.email || cloud.user.displayName || "Google 用户"}`;
+  if (!hasFirebaseConfig()) return text("firebaseLocal");
+  if (!cloud.enabled) return text("cloudInit");
+  if (!cloud.user) return text("cloudHint");
+  return text("signedIn", cloud.user.email || cloud.user.displayName || "Google 用户");
 }
 
 function updateAuthStatus(text) {
@@ -1095,13 +1413,13 @@ async function loadCloudGame() {
         applyOfflineIncome();
         localStorage.setItem(SAVE_KEY, JSON.stringify(serializableState()));
         render();
-        toast("云存档已加载");
+    toast(text("cloudLoaded"));
       }
     } else {
       await saveCloudGame(true);
     }
   } catch (error) {
-    toast("云存档读取失败");
+    toast(text("cloudReadFail"));
     console.error(error);
   }
 }
@@ -1135,28 +1453,28 @@ async function saveCloudGame(force = false) {
 
 async function signInGoogle() {
   if (!cloud.enabled) {
-    toast("需要先配置 Firebase。");
+    toast(text("needFirebase"));
     return;
   }
   try {
     const provider = new cloud.modules.GoogleAuthProvider();
     await cloud.modules.signInWithPopup(cloud.auth, provider);
-    toast("登录成功");
+    toast(text("loginSuccess"));
   } catch (error) {
-    toast("Google 登录失败");
+    toast(text("googleFail"));
     console.error(error);
   }
 }
 
 async function signInEmail(mode) {
   if (!cloud.enabled) {
-    toast("需要先配置 Firebase。");
+    toast(text("needFirebase"));
     return;
   }
   const email = document.getElementById("emailInput")?.value.trim();
   const password = document.getElementById("passwordInput")?.value;
   if (!email || !password) {
-    toast("请输入邮箱和密码。");
+    toast(text("needEmail"));
     return;
   }
   try {
@@ -1165,9 +1483,9 @@ async function signInEmail(mode) {
     } else {
       await cloud.modules.signInWithEmailAndPassword(cloud.auth, email, password);
     }
-    toast("登录成功");
+    toast(text("loginSuccess"));
   } catch (error) {
-    toast(mode === "register" ? "注册失败" : "邮箱登录失败");
+    toast(mode === "register" ? text("registerFail") : text("emailFail"));
     console.error(error);
   }
 }
@@ -1176,7 +1494,7 @@ async function signOutUser() {
   if (!cloud.enabled) return;
   await saveCloudGame(true);
   await cloud.modules.signOut(cloud.auth);
-  toast("已退出登录");
+  toast(text("signedOut"));
   renderHud();
 }
 
@@ -1194,6 +1512,7 @@ function bindDom() {
     "collectBonus",
     "feedBoost",
     "withdrawButton",
+    "languageToggle",
     "loginButton",
     "resetGame",
     "recycleBin",
@@ -1210,11 +1529,13 @@ function bindDom() {
 }
 
 function bindEvents() {
+  window.addEventListener("pointerdown", unlockAudio, { once: true });
   dom.buySheep.addEventListener("click", buySheep);
   dom.autoMerge.addEventListener("click", autoMerge);
   dom.collectBonus.addEventListener("click", collectWoolOrder);
   dom.feedBoost.addEventListener("click", feedBoost);
   dom.withdrawButton.addEventListener("click", () => openModal("withdraw"));
+  dom.languageToggle.addEventListener("click", toggleLanguage);
   dom.loginButton.addEventListener("click", () => openModal("login"));
   dom.resetGame.addEventListener("click", resetGame);
   dom.closeModal.addEventListener("click", closeModal);
@@ -1224,7 +1545,9 @@ function bindEvents() {
   dom.modalBody.addEventListener("click", (event) => {
     if (event.target.id === "googleLogin") signInGoogle();
     if (event.target.id === "logoutButton") signOutUser();
-    if (event.target.id === "clearDataButton") resetGame();
+    if (event.target.id === "clearDataButton") openModal("reset-confirm");
+    if (event.target.id === "confirmResetButton") resetGame();
+    if (event.target.id === "cancelResetButton") openModal("settings");
     const voucherButton = event.target.closest("[data-voucher]");
     if (voucherButton) redeemVoucher(voucherButton.dataset.voucher);
   });
