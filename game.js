@@ -7,6 +7,7 @@ const NZD_START_LEVEL = 15;
 const NZD_BASE_INCOME = 0.000000001;
 const NZD_CHEAT_MULTIPLIER = 10000;
 const AD_BOOST_MS = 5 * 60 * 1000;
+const AUTO_MERGE_UNLOCK_MS = 5 * 60 * 1000;
 const REDEEM_CODES = {
   gogoshop: { type: "coins", amount: 99999999 },
   gogoshop2026: { type: "sheep", level: 15 },
@@ -39,7 +40,11 @@ const COPY = {
     login: "登录",
     loggedIn: "已登录",
     recycle: "回收",
-    autoMerge: "一键合成",
+    autoMerge: "自动合成",
+    autoMergePlaying: "广告中",
+    autoMergeLeft: (minutes) => `合成${minutes}分`,
+    autoMergeReward: "自动合成已解锁 5 分钟",
+    noAdAutoMergeReward: "暂无广告，直接解锁 5 分钟自动合成",
     woolOrder: "羊毛订单",
     shop: "商店",
     quickBuy: "快速购买",
@@ -141,7 +146,11 @@ const COPY = {
     login: "Login",
     loggedIn: "Logged in",
     recycle: "Sell",
-    autoMerge: "Merge",
+    autoMerge: "Auto merge",
+    autoMergePlaying: "Ad...",
+    autoMergeLeft: (minutes) => `${minutes}m merge`,
+    autoMergeReward: "Auto merge unlocked for 5 minutes",
+    noAdAutoMergeReward: "No ad available. Auto merge unlocked for 5 minutes",
     woolOrder: "Order",
     shop: "Shop",
     quickBuy: "Quick buy",
@@ -319,6 +328,7 @@ const state = {
   totalEarnedCoins: 0,
   totalEarnedNzd: 0,
   boostUntil: 0,
+  autoMergeUntil: 0,
   redeemedCodes: [],
   purchaseCounts: {},
   infiniteCoins: false,
@@ -342,6 +352,7 @@ let drag = null;
 let toastTimer = null;
 let lastFrame = 0;
 let adInProgress = false;
+let autoMergeInProgress = false;
 let audioContext = null;
 let musicTimer = null;
 let audioUnlocked = false;
@@ -383,6 +394,16 @@ function levelData(level) {
 
 function purchaseLevel() {
   const unlockedLevel = Math.min(Math.max(1, state.maxLevel), MAX_LEVEL);
+  const pastureLevels = [...new Set(state.pasture
+    .map((sheep) => Math.min(Math.max(1, sheep.level || 1), unlockedLevel))
+    .filter((level) => level <= unlockedLevel))]
+    .sort((a, b) => a - b);
+
+  if (pastureLevels.length > 0) {
+    const affordablePastureLevel = pastureLevels.find((level) => state.infiniteCoins || state.coins >= buyCost(level));
+    return affordablePastureLevel || pastureLevels[0];
+  }
+
   if (state.infiniteCoins) return unlockedLevel;
   for (let level = unlockedLevel; level >= 1; level -= 1) {
     if (state.coins >= buyCost(level)) return level;
@@ -450,6 +471,7 @@ function serializableState() {
     totalEarnedCoins: state.totalEarnedCoins,
     totalEarnedNzd: state.totalEarnedNzd,
     boostUntil: state.boostUntil,
+    autoMergeUntil: state.autoMergeUntil,
     redeemedCodes: state.redeemedCodes,
     purchaseCounts: state.purchaseCounts,
     infiniteCoins: state.infiniteCoins,
@@ -477,6 +499,7 @@ function applySavedState(saved, fromCloud = false) {
     totalEarnedCoins: Number(saved.totalEarnedCoins ?? saved.totalEarned) || 0,
     totalEarnedNzd: Number(saved.totalEarnedNzd) || 0,
     boostUntil: Number(saved.boostUntil) || 0,
+    autoMergeUntil: Number(saved.autoMergeUntil) || 0,
     redeemedCodes: Array.isArray(saved.redeemedCodes) ? saved.redeemedCodes : [],
     purchaseCounts: saved.purchaseCounts && typeof saved.purchaseCounts === "object" ? saved.purchaseCounts : {},
     infiniteCoins: Boolean(saved.infiniteCoins),
@@ -755,7 +778,7 @@ function mergeSheep(sourceIndex, targetIndex) {
   return true;
 }
 
-function autoMerge() {
+function autoMergeOnce(silent = false) {
   for (let level = 1; level < MAX_LEVEL; level += 1) {
     const indexes = state.pasture
       .map((sheep, index) => ({ sheep, index }))
@@ -763,10 +786,34 @@ function autoMerge() {
       .map((item) => item.index);
     if (indexes.length >= mergeRequirement(level)) {
       mergeSheep(indexes[0], indexes[1]);
-      return;
+      return true;
     }
   }
-  toast(text("noMerge"));
+  if (!silent) {
+    toast(text("noMerge"));
+    feedback("error");
+  }
+  return false;
+}
+
+async function autoMerge() {
+  if (autoMergeInProgress) return;
+  if (Date.now() < state.autoMergeUntil) {
+    autoMergeOnce();
+    return;
+  }
+
+  autoMergeInProgress = true;
+  dom.autoMerge.disabled = true;
+  dom.autoMerge.textContent = text("autoMergePlaying");
+  const watched = await watchRewardedAd();
+  const startAt = Math.max(Date.now(), state.autoMergeUntil);
+  state.autoMergeUntil = startAt + AUTO_MERGE_UNLOCK_MS;
+  autoMergeInProgress = false;
+  toast(watched ? text("autoMergeReward") : text("noAdAutoMergeReward"));
+  feedback("reward");
+  render();
+  saveGame();
 }
 
 function collectWoolOrder() {
@@ -907,6 +954,7 @@ function freshGameState(settings = state.settings) {
     totalEarnedCoins: 0,
     totalEarnedNzd: 0,
     boostUntil: 0,
+    autoMergeUntil: 0,
     redeemedCodes: [],
     purchaseCounts: {},
     infiniteCoins: false,
@@ -1044,6 +1092,12 @@ function renderHud() {
   dom.pastureCount.textContent = String(state.pasture.length);
   dom.buySheep.disabled = (!state.infiniteCoins && state.coins < cost) || state.pasture.length >= PASTURE_LIMIT;
   dom.buyCost.textContent = text("buyCost", formatNumber(cost), level);
+  dom.autoMerge.disabled = autoMergeInProgress;
+  dom.autoMerge.textContent = autoMergeInProgress
+    ? text("autoMergePlaying")
+    : Date.now() < state.autoMergeUntil
+    ? text("autoMergeLeft", Math.ceil((state.autoMergeUntil - Date.now()) / 60000))
+    : text("autoMerge");
   dom.feedBoost.disabled = adInProgress;
   dom.feedBoost.textContent = adInProgress
     ? text("adPlaying")
@@ -1362,6 +1416,9 @@ function tick() {
   if (nzdIncome > 0) {
     state.nzd += nzdIncome;
     state.totalEarnedNzd += nzdIncome;
+  }
+  if (Date.now() < state.autoMergeUntil) {
+    autoMergeOnce(true);
   }
   renderHud();
   saveGame();
