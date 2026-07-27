@@ -2,10 +2,9 @@
   --ink: #3b2a22;
   --gold: #ffc321;
   --gold-deep: #d98205;
-  --grass: #66b93f;
+  --grass: #6bc947;
   --grass-dark: #3f973d;
   --sky: #67c8f1;
-  --panel: rgba(255, 255, 255, 0.92);
   --shadow: 0 16px 38px rgba(57, 76, 38, 0.22);
 }
 
@@ -32,9 +31,9 @@ body {
 }
 
 button {
+  border: 0;
   font: inherit;
   cursor: pointer;
-  border: 0;
 }
 
 .phone-stage {
@@ -42,8 +41,7 @@ button {
   width: min(100vw, calc(100vh * 0.5625));
   height: min(100vh, calc(100vw * 1.7778));
   overflow: hidden;
-  background:
-    linear-gradient(180deg, #66c9f6 0 24%, #8ade54 25% 100%);
+  background: linear-gradient(180deg, #66c9f6 0 24%, #8ade54 25% 100%);
   box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.16), 0 28px 80px rgba(0, 0, 0, 0.34);
 }
 
@@ -112,10 +110,10 @@ button {
 
 .house {
   right: -18px;
-  top: 114px;
+  top: 112px;
   width: 138px;
   height: 110px;
-  opacity: 0.82;
+  opacity: 0.66;
   background:
     linear-gradient(135deg, transparent 0 44%, #f5df85 45% 60%, transparent 61%) 18px 0 / 92px 62px no-repeat,
     linear-gradient(180deg, #fff2de, #e9cab0) 26px 44px / 94px 62px no-repeat;
@@ -139,12 +137,12 @@ button {
   z-index: 2;
   display: grid;
   justify-items: center;
-  gap: 14px;
-  padding-top: 134px;
+  gap: 12px;
+  padding-top: 104px;
 }
 
 .level-line {
-  font-size: clamp(1rem, 3.3vh, 1.55rem);
+  font-size: clamp(1rem, 3.1vh, 1.45rem);
   font-weight: 650;
   text-shadow: 0 1px 0 rgba(255, 255, 255, 0.45);
 }
@@ -156,13 +154,13 @@ button {
 .wood-sign {
   position: relative;
   display: grid;
-  grid-template-columns: 42px 1fr 1fr;
+  grid-template-columns: 38px 1fr 1fr;
   align-items: center;
-  gap: 14px;
-  min-width: 46%;
-  padding: 10px 28px 12px;
+  gap: 13px;
+  min-width: 45%;
+  padding: 9px 24px 11px;
   color: #21130d;
-  font-size: clamp(1.15rem, 4vh, 2rem);
+  font-size: clamp(1.08rem, 3.7vh, 1.85rem);
   background: linear-gradient(180deg, #f2c467, #d99530);
   border-radius: 4px;
   box-shadow: inset 0 -8px 0 rgba(109, 58, 19, 0.16), 0 8px 0 rgba(104, 55, 18, 0.25);
@@ -172,9 +170,9 @@ button {
   content: "";
   position: absolute;
   left: 50%;
-  bottom: -48px;
+  bottom: -44px;
   width: 17px;
-  height: 48px;
+  height: 44px;
   border-radius: 0 0 8px 8px;
   background: linear-gradient(90deg, #9c5721, #c77a30);
   transform: translateX(-50%);
@@ -182,8 +180,8 @@ button {
 }
 
 .gem {
-  width: 30px;
-  height: 30px;
+  width: 28px;
+  height: 28px;
   border-radius: 50% 45% 52% 43%;
   background:
     radial-gradient(circle at 35% 28%, #ffffff 0 16%, transparent 17%),
@@ -191,11 +189,157 @@ button {
   box-shadow: inset -4px -5px 10px rgba(18, 67, 133, 0.24);
 }
 
+.workshop-hut {
+  position: absolute;
+  top: 212px;
+  right: 12px;
+  z-index: 8;
+  width: 128px;
+  height: 118px;
+  filter: drop-shadow(0 10px 12px rgba(50, 71, 30, 0.2));
+}
+
+.hut-roof {
+  position: absolute;
+  left: 8px;
+  top: 0;
+  width: 112px;
+  height: 46px;
+  border-radius: 14px 14px 8px 8px;
+  background: linear-gradient(145deg, #f7d978, #c9872f);
+  clip-path: polygon(50% 0, 100% 68%, 91% 100%, 9% 100%, 0 68%);
+}
+
+.hut-body {
+  position: absolute;
+  left: 15px;
+  right: 5px;
+  bottom: 13px;
+  height: 78px;
+  overflow: hidden;
+  border: 4px solid #b87535;
+  border-radius: 12px;
+  background:
+    linear-gradient(90deg, rgba(116, 69, 25, 0.18) 0 2px, transparent 2px 18px),
+    linear-gradient(180deg, #fff4c9, #d79a57);
+}
+
+.hut-body::after {
+  content: "";
+  position: absolute;
+  left: 14px;
+  right: 14px;
+  bottom: 6px;
+  height: 20px;
+  border-radius: 50%;
+  background: rgba(115, 63, 31, 0.28);
+}
+
+.hut-upgrade {
+  position: absolute;
+  right: 8px;
+  bottom: -4px;
+  min-width: 56px;
+  min-height: 24px;
+  border-radius: 999px;
+  color: #744007;
+  font-size: 0.72rem;
+  font-weight: 950;
+  background: linear-gradient(180deg, #fff6a8, #ffc321);
+  box-shadow: inset 0 -3px 0 rgba(177, 92, 0, 0.2);
+}
+
+.shear-arm {
+  position: absolute;
+  right: 16px;
+  top: 13px;
+  z-index: 4;
+  width: 31px;
+  height: 7px;
+  border-radius: 999px;
+  background: #606b72;
+  transform-origin: right center;
+  animation: shear 0.8s ease-in-out infinite;
+}
+
+.shear-arm::before,
+.shear-arm::after {
+  content: "";
+  position: absolute;
+  left: -7px;
+  width: 15px;
+  height: 4px;
+  border-radius: 999px;
+  background: #e5eef2;
+}
+
+.shear-arm::before {
+  top: -5px;
+  transform: rotate(-24deg);
+}
+
+.shear-arm::after {
+  bottom: -5px;
+  transform: rotate(24deg);
+}
+
+.workshop-sheep {
+  position: absolute;
+  left: 14px;
+  bottom: 13px;
+  z-index: 3;
+  display: flex;
+  gap: 5px;
+}
+
+.workshop-mini {
+  position: relative;
+  width: 42px;
+  height: 36px;
+  animation: shornBounce 1.15s ease-in-out infinite;
+}
+
+.workshop-mini::before {
+  content: "";
+  position: absolute;
+  left: 3px;
+  top: 11px;
+  width: 29px;
+  height: 18px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #fffdf8, #d9cab8);
+  box-shadow: inset -5px -5px 8px rgba(64, 43, 24, 0.18);
+}
+
+.workshop-mini::after {
+  content: "";
+  position: absolute;
+  right: 3px;
+  top: 14px;
+  width: 16px;
+  height: 15px;
+  border-radius: 50%;
+  background: #d87575;
+}
+
+.wool-pile {
+  position: absolute;
+  right: 8px;
+  bottom: 8px;
+  z-index: 2;
+  width: 26px;
+  height: 16px;
+  border-radius: 50%;
+  background: #fffef8;
+  box-shadow: -9px 3px 0 -2px #fffef8, 8px 4px 0 -3px #fffef8;
+  animation: woolPulse 1.2s ease-in-out infinite;
+}
+
 .side-buttons {
   position: absolute;
-  top: 250px;
-  right: 11px;
-  z-index: 5;
+  top: 248px;
+  left: 12px;
+  z-index: 9;
   display: grid;
   gap: 8px;
 }
@@ -213,60 +357,68 @@ button {
   box-shadow: inset 0 -4px 0 rgba(177, 92, 0, 0.2), 0 7px 12px rgba(75, 88, 32, 0.18);
 }
 
-.pasture-grid {
+.pasture-field {
   position: absolute;
-  left: 4.5%;
-  right: 4.5%;
-  top: 40.5%;
-  height: 41%;
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  grid-template-rows: repeat(3, 1fr);
-  column-gap: 6%;
-  row-gap: 8%;
+  left: 4.2%;
+  right: 4.2%;
+  top: 36.5%;
+  height: 45%;
   z-index: 3;
+  overflow: hidden;
   touch-action: none;
 }
 
-.pasture-slot {
-  position: relative;
-  min-width: 0;
-  min-height: 0;
-}
-
-.pasture-slot::after,
-.workshop-slot::after {
+.pasture-field::before {
   content: "";
   position: absolute;
-  left: 50%;
-  bottom: 7%;
-  width: 78%;
-  height: 34%;
+  left: 2%;
+  right: 2%;
+  top: 4%;
+  height: 94%;
   border-radius: 50%;
-  background: rgba(164, 97, 35, 0.62);
-  transform: translateX(-50%);
+  background:
+    radial-gradient(ellipse at 18% 28%, rgba(76, 151, 56, 0.28) 0 10%, transparent 11%),
+    radial-gradient(ellipse at 72% 21%, rgba(76, 151, 56, 0.22) 0 13%, transparent 14%),
+    radial-gradient(ellipse at 45% 72%, rgba(76, 151, 56, 0.2) 0 11%, transparent 12%);
+  pointer-events: none;
 }
 
-.pasture-slot.empty::after {
-  opacity: 0.28;
+.pasture-hint {
+  position: absolute;
+  left: 50%;
+  bottom: 44px;
+  z-index: 2;
+  width: max-content;
+  max-width: 90%;
+  padding: 7px 11px;
+  border-radius: 999px;
+  color: #fff8c2;
+  font-size: 0.68rem;
+  font-weight: 900;
+  background: rgba(38, 91, 31, 0.72);
+  transform: translateX(-50%);
+  pointer-events: none;
 }
 
 .sheep-token {
   position: absolute;
-  left: 50%;
-  top: 48%;
   z-index: 4;
-  width: 125%;
-  aspect-ratio: 1.05;
+  width: 110px;
+  height: 98px;
   border: 0;
   background: transparent;
   transform: translate(-50%, -50%);
   touch-action: none;
   user-select: none;
+  transition: filter 0.14s ease;
+}
+
+.sheep-token.walking {
+  animation: bodyBob 1.05s ease-in-out infinite;
 }
 
 .sheep-token.dragging {
-  z-index: 20;
+  z-index: 30;
   pointer-events: none;
   filter: drop-shadow(0 18px 16px rgba(35, 50, 24, 0.38));
 }
@@ -275,18 +427,31 @@ button {
   filter: drop-shadow(0 0 12px #ffef65) drop-shadow(0 0 22px #ffbe20);
 }
 
+.sheep-shadow {
+  position: absolute;
+  left: 50%;
+  bottom: 7px;
+  width: 82%;
+  height: 24%;
+  border-radius: 50%;
+  background: rgba(111, 68, 28, 0.36);
+  transform: translateX(-50%);
+}
+
 .sheep-core {
   position: absolute;
-  inset: 9% 8% 13% 9%;
+  inset: 11% 9% 18% 9%;
   border-radius: 38% 46% 42% 44%;
   background:
-    radial-gradient(circle at 35% 28%, rgba(255, 255, 255, 0.95) 0 9%, transparent 10%),
-    radial-gradient(circle at 54% 22%, rgba(255, 255, 255, 0.78) 0 11%, transparent 12%),
+    radial-gradient(circle at 28% 23%, rgba(255, 255, 255, 0.96) 0 9%, transparent 10%),
+    radial-gradient(circle at 49% 17%, rgba(255, 255, 255, 0.8) 0 11%, transparent 12%),
+    radial-gradient(circle at 68% 33%, rgba(255, 255, 255, 0.58) 0 10%, transparent 11%),
+    repeating-radial-gradient(circle at 35% 35%, rgba(255, 255, 255, 0.18) 0 3px, transparent 4px 8px),
     linear-gradient(135deg, var(--fur-hi), var(--fur-mid) 52%, var(--fur-low));
   box-shadow:
-    inset -11px -15px 24px rgba(45, 29, 15, 0.2),
-    inset 8px 9px 16px rgba(255, 255, 255, 0.5),
-    0 4px 0 rgba(0, 0, 0, 0.08);
+    inset -13px -16px 25px rgba(45, 29, 15, 0.22),
+    inset 9px 10px 18px rgba(255, 255, 255, 0.54),
+    0 5px 0 rgba(0, 0, 0, 0.08);
 }
 
 .sheep-core::after {
@@ -296,8 +461,9 @@ button {
   border-radius: inherit;
   background:
     radial-gradient(circle at 18% 74%, var(--mark, transparent) 0 13%, transparent 14%),
-    radial-gradient(circle at 75% 32%, var(--mark, transparent) 0 12%, transparent 13%);
-  opacity: 0.72;
+    radial-gradient(circle at 75% 32%, var(--mark, transparent) 0 12%, transparent 13%),
+    linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.18), transparent);
+  opacity: 0.76;
 }
 
 .sheep-face {
@@ -311,7 +477,7 @@ button {
     radial-gradient(circle at 34% 36%, #fff 0 8%, transparent 9%),
     radial-gradient(circle at 68% 36%, #fff 0 8%, transparent 9%),
     linear-gradient(160deg, var(--face-hi), var(--face-low));
-  box-shadow: inset -4px -7px 8px rgba(0, 0, 0, 0.22);
+  box-shadow: inset -5px -8px 9px rgba(0, 0, 0, 0.25), inset 4px 4px 8px rgba(255, 255, 255, 0.18);
 }
 
 .sheep-face::before,
@@ -331,6 +497,36 @@ button {
 
 .sheep-face::after {
   right: 25%;
+}
+
+.sheep-nose {
+  position: absolute;
+  right: 16%;
+  top: 49%;
+  width: 15%;
+  height: 10%;
+  border-radius: 50%;
+  background: rgba(77, 26, 25, 0.34);
+}
+
+.sheep-ear {
+  position: absolute;
+  top: 33%;
+  width: 18%;
+  height: 16%;
+  border-radius: 55% 45% 55% 45%;
+  background: var(--ear, #efa5a5);
+  box-shadow: inset -3px -4px 5px rgba(92, 30, 35, 0.16);
+}
+
+.sheep-ear.left {
+  right: 36%;
+  transform: rotate(-18deg);
+}
+
+.sheep-ear.right {
+  right: 2%;
+  transform: rotate(26deg);
 }
 
 .sheep-hat,
@@ -419,7 +615,7 @@ button {
 
 .sheep-leg {
   position: absolute;
-  bottom: 11%;
+  bottom: 13%;
   width: 8%;
   height: 18%;
   border-radius: 8px;
@@ -438,14 +634,14 @@ button {
 
 .sheep-level {
   position: absolute;
-  left: -10%;
-  bottom: 12%;
+  left: -8%;
+  bottom: 16%;
   z-index: 8;
-  min-width: 38px;
-  padding: 4px 11px;
+  min-width: 36px;
+  padding: 4px 10px;
   border-radius: 999px;
   color: #7b4a12;
-  font-size: clamp(0.8rem, 2.4vh, 1.25rem);
+  font-size: clamp(0.78rem, 2.2vh, 1.15rem);
   font-weight: 950;
   background: linear-gradient(180deg, #ffe981, #f4c848);
   box-shadow: inset 0 -3px 0 rgba(160, 92, 0, 0.18);
@@ -462,6 +658,7 @@ button {
   --hat-brim: #1e6b9a;
   --hat-opacity: 1;
   --leg: #33343a;
+  --ear: #efa2a5;
 }
 
 .variant-2 {
@@ -475,6 +672,7 @@ button {
   --scarf-opacity: 1;
   --tool: #e2a73b;
   --tool-opacity: 1;
+  --ear: #ffb3b7;
 }
 
 .variant-3 {
@@ -486,6 +684,7 @@ button {
   --mark: rgba(98, 57, 12, 0.26);
   --horn: #f7df9a;
   --horn-opacity: 1;
+  --ear: #d58a60;
 }
 
 .variant-4 {
@@ -498,6 +697,7 @@ button {
   --hat: #4b83d9;
   --hat-brim: #1b3c78;
   --hat-opacity: 1;
+  --ear: #b9e1eb;
 }
 
 .variant-5 {
@@ -509,6 +709,7 @@ button {
   --mark: rgba(255, 255, 255, 0.46);
   --horn: #e6dcff;
   --horn-opacity: 1;
+  --ear: #baa8f6;
 }
 
 .variant-6 {
@@ -519,6 +720,7 @@ button {
   --face-low: #6e3915;
   --mark: rgba(255, 255, 255, 0.36);
   --crown-opacity: 1;
+  --ear: #e8ad55;
 }
 
 .variant-7 {
@@ -532,6 +734,7 @@ button {
   --horn-opacity: 1;
   --scarf: linear-gradient(90deg, #ff6868, #ffdd58, #4ccf7a, #5ba8ff);
   --scarf-opacity: 1;
+  --ear: #ffc1dc;
 }
 
 .variant-8 {
@@ -544,13 +747,24 @@ button {
   --horn: #d7e2f1;
   --horn-opacity: 1;
   --crown-opacity: 1;
+  --ear: #cad8e5;
+}
+
+.utility-actions {
+  position: absolute;
+  left: 50%;
+  bottom: 16.1%;
+  z-index: 12;
+  display: flex;
+  gap: 8px;
+  transform: translateX(-50%);
 }
 
 .bottom-shop {
   position: absolute;
   left: 50%;
-  bottom: 5.8%;
-  z-index: 7;
+  bottom: 5.4%;
+  z-index: 11;
   width: 62%;
   transform: translateX(-50%);
 }
@@ -602,14 +816,8 @@ button {
   line-height: 1;
 }
 
-.utility-actions {
-  position: absolute;
-  left: 50%;
-  bottom: 1.2%;
-  z-index: 7;
-  display: flex;
-  gap: 7px;
-  transform: translateX(-50%);
+.hidden-reset {
+  display: none;
 }
 
 .modal-backdrop {
@@ -690,6 +898,7 @@ button {
   left: auto;
   top: auto;
   width: min(260px, 62vw);
+  height: min(230px, 55vw);
   transform: none;
   pointer-events: none;
 }
@@ -712,7 +921,8 @@ button {
 
 .quest strong,
 .quest span,
-.book-item strong {
+.book-item strong,
+.book-item span {
   display: block;
 }
 
@@ -721,11 +931,16 @@ button {
   font-size: 0.78rem;
 }
 
-.sheep-book,
-.workshop-list {
+.sheep-book {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 8px;
+}
+
+.book-item {
+  min-height: 118px;
+  display: grid;
+  place-items: center;
 }
 
 .book-item.locked {
@@ -733,10 +948,22 @@ button {
   filter: grayscale(1);
 }
 
+.book-preview {
+  position: relative;
+  width: 70px;
+  height: 62px;
+}
+
+.workshop-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
 .toast {
   position: absolute;
   left: 50%;
-  bottom: 15.5%;
+  bottom: 23.8%;
   z-index: 50;
   max-width: 80%;
   padding: 10px 14px;
@@ -758,11 +985,55 @@ button {
 @keyframes step {
   0%,
   100% {
+    transform: translateY(0) rotate(0deg);
+  }
+
+  50% {
+    transform: translateY(-5px) rotate(2deg);
+  }
+}
+
+@keyframes bodyBob {
+  0%,
+  100% {
+    margin-top: 0;
+  }
+
+  50% {
+    margin-top: -3px;
+  }
+}
+
+@keyframes shear {
+  0%,
+  100% {
+    transform: rotate(-18deg);
+  }
+
+  50% {
+    transform: rotate(18deg);
+  }
+}
+
+@keyframes shornBounce {
+  0%,
+  100% {
     transform: translateY(0);
   }
 
   50% {
-    transform: translateY(-4px);
+    transform: translateY(-3px);
+  }
+}
+
+@keyframes woolPulse {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+
+  50% {
+    transform: scale(1.12);
   }
 }
 
