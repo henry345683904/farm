@@ -1,4 +1,4 @@
 export const supabaseConfig = {
-  url: "YOUR_SUPABASE_PROJECT_URL",
-  anonKey: "YOUR_SUPABASE_ANON_KEY"
+  url: "https://gxgeakhhqfhgcsgmmocj.supabase.co",
+  anonKey: "sb_publishable_-aevdDydXxgp4XtMS-IM9Q_XnCz7yX_"
 };
