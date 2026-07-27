@@ -7,7 +7,8 @@ const NZD_START_LEVEL = 15;
 const NZD_BASE_INCOME = 0.000000001;
 const AD_BOOST_MS = 5 * 60 * 1000;
 const REDEEM_CODES = {
-  gogoshop: 99999999
+  gogoshop: { type: "coins", amount: 99999999 },
+  gogoshop2026: { type: "sheep", level: 15 }
 };
 const SAVE_KEY = "happy-sheep-farm-save-v5";
 const OLD_SAVE_KEYS = [
@@ -97,6 +98,7 @@ const state = {
   totalEarnedNzd: 0,
   boostUntil: 0,
   redeemedCodes: [],
+  purchaseCounts: {},
   lastSaved: Date.now()
 };
 
@@ -138,9 +140,14 @@ function levelData(level) {
   return LEVELS[Math.min(Math.max(Number(level) || 1, 1), LEVELS.length) - 1];
 }
 
-function buyCost() {
-  if (state.totalBought < 2) return BUY_BASE_COST;
-  return Math.floor(BUY_BASE_COST * 1.18 ** Math.max(0, state.totalBought - 1));
+function purchaseLevel() {
+  return Math.min(Math.max(1, state.maxLevel), MAX_LEVEL);
+}
+
+function buyCost(level = purchaseLevel()) {
+  const baseCost = BUY_BASE_COST * level;
+  if (level <= 10) return baseCost;
+  return Math.floor(baseCost * 1.12 ** (state.purchaseCounts[level] || 0));
 }
 
 function mergeRequirement(level) {
@@ -196,6 +203,7 @@ function serializableState() {
     totalEarnedNzd: state.totalEarnedNzd,
     boostUntil: state.boostUntil,
     redeemedCodes: state.redeemedCodes,
+    purchaseCounts: state.purchaseCounts,
     lastSaved: Date.now(),
     version: 5
   };
@@ -218,6 +226,7 @@ function applySavedState(saved, fromCloud = false) {
     totalEarnedNzd: Number(saved.totalEarnedNzd) || 0,
     boostUntil: Number(saved.boostUntil) || 0,
     redeemedCodes: Array.isArray(saved.redeemedCodes) ? saved.redeemedCodes : [],
+    purchaseCounts: saved.purchaseCounts && typeof saved.purchaseCounts === "object" ? saved.purchaseCounts : {},
     lastSaved: Number(saved.lastSaved) || Date.now()
   });
 
@@ -269,20 +278,33 @@ function incomeMultiplier() {
   return Date.now() < state.boostUntil ? 2 : 1;
 }
 
-function coinIncomePerSecond() {
+function baseCoinIncomePerSecond() {
   return state.pasture.reduce((sum, sheep) => {
     return sum + levelData(sheep.level).coinIncome;
-  }, 0) * incomeMultiplier();
+  }, 0);
+}
+
+function coinIncomePerSecond() {
+  return baseCoinIncomePerSecond() * incomeMultiplier();
+}
+
+function boostedCoinIncomePerSecond() {
+  return Math.max(0, coinIncomePerSecond() - baseCoinIncomePerSecond());
+}
+
+function baseNzdIncomePerSecond() {
+  return state.pasture.reduce((sum, sheep) => {
+    return sum + levelData(sheep.level).nzdIncome;
+  }, 0);
 }
 
 function nzdIncomePerSecond() {
-  return state.pasture.reduce((sum, sheep) => {
-    return sum + levelData(sheep.level).nzdIncome;
-  }, 0) * incomeMultiplier();
+  return baseNzdIncomePerSecond() * incomeMultiplier();
 }
 
 function buySheep() {
-  const cost = buyCost();
+  const level = purchaseLevel();
+  const cost = buyCost(level);
   if (state.pasture.length >= PASTURE_LIMIT) {
     toast("牧场满了，先合成升级。");
     return;
@@ -293,9 +315,10 @@ function buySheep() {
   }
 
   state.coins -= cost;
-  state.pasture.push(createSheep(1));
+  state.pasture.push(createSheep(level));
   state.totalBought += 1;
-  toast("购买成功");
+  state.purchaseCounts[level] = (state.purchaseCounts[level] || 0) + 1;
+  toast(`购买成功：Lv.${level} ${levelData(level).name}`);
   render();
   saveGame();
 }
@@ -426,9 +449,21 @@ function redeemCode(code) {
   }
 
   state.redeemedCodes.push(normalized);
-  state.coins += reward;
-  state.totalEarnedCoins += reward;
-  toast(`兑换成功，获得 ${formatNumber(reward)} 金币`);
+  if (reward.type === "coins") {
+    state.coins += reward.amount;
+    state.totalEarnedCoins += reward.amount;
+    toast(`兑换成功，获得 ${formatNumber(reward.amount)} 金币`);
+  }
+  if (reward.type === "sheep") {
+    if (state.pasture.length >= PASTURE_LIMIT) {
+      state.redeemedCodes = state.redeemedCodes.filter((item) => item !== normalized);
+      toast("牧场满了，先合成后再领取。");
+      return;
+    }
+    state.pasture.push(createSheep(reward.level));
+    state.maxLevel = Math.max(state.maxLevel, reward.level);
+    toast(`兑换成功，获得 Lv.${reward.level} ${levelData(reward.level).name}`);
+  }
   closeModal();
   render();
   saveGame();
@@ -513,14 +548,20 @@ function renderPasture() {
 }
 
 function renderHud() {
-  const cost = buyCost();
+  const level = purchaseLevel();
+  const cost = buyCost(level);
+  const baseCoinIncome = baseCoinIncomePerSecond();
+  const boostedCoinIncome = boostedCoinIncomePerSecond();
+  const coinIncomeText = boostedCoinIncome > 0
+    ? `+${formatNumber(baseCoinIncome)}/秒 加速+${formatNumber(boostedCoinIncome)}`
+    : `+${formatNumber(baseCoinIncome)}/秒`;
   dom.coins.textContent = `${formatNumber(state.coins)} 金币`;
   dom.nzd.textContent = formatNZD(state.nzd);
-  dom.income.textContent = `+${formatNumber(coinIncomePerSecond())}/秒 · +${formatNZD(nzdIncomePerSecond())}/秒`;
+  dom.income.textContent = `${coinIncomeText} · +${formatNZD(nzdIncomePerSecond())}/秒`;
   dom.maxLevel.textContent = `Lv.${state.maxLevel}`;
   dom.pastureCount.textContent = String(state.pasture.length);
   dom.buySheep.disabled = state.coins < cost || state.pasture.length >= PASTURE_LIMIT;
-  dom.buyCost.textContent = `${formatNumber(cost)} 金币 · Lv.1`;
+  dom.buyCost.textContent = `${formatNumber(cost)} 金币 · Lv.${level}`;
   dom.feedBoost.disabled = adInProgress;
   dom.feedBoost.textContent = adInProgress
     ? "广告中"
@@ -731,7 +772,7 @@ function openModal(type) {
     dom.modalTitle.textContent = "兑换码";
     dom.modalBody.innerHTML = `
       <form id="redeemForm" class="auth-card">
-        <p>输入兑换码领取奖励。</p>
+        <p>输入兑换码领取金币或稀有羊。</p>
         <input id="redeemInput" type="text" placeholder="兑换码" autocomplete="off" />
         <button type="submit">领取</button>
       </form>
