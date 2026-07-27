@@ -1,4 +1,4 @@
-import { firebaseConfig } from "./firebase-config.js";
+import { supabaseConfig } from "./supabase-config.js";
 
 const BUY_BASE_COST = 50;
 const PASTURE_LIMIT = 30;
@@ -79,8 +79,8 @@ const COPY = {
     coinIncome: (amount) => `${amount} 金币/秒`,
     nzdIncome: (amount) => `${amount}/秒`,
     loginTitle: "登录存档",
-    firebaseLocal: "未配置 Firebase，先使用本地存档。",
-    firebaseLocalPlay: "未配置 Firebase，当前使用本地试玩存档。",
+    supabaseLocal: "未配置 Supabase，先使用本地存档。",
+    supabaseLocalPlay: "未配置 Supabase，当前使用本地试玩存档。",
     cloudInit: "云存档初始化中...",
     cloudHint: "登录后会把进度保存到云端。",
     signedIn: (name) => `已登录：${name}`,
@@ -109,7 +109,7 @@ const COPY = {
     cloudLoaded: "云存档已加载",
     cloudReadFail: "云存档读取失败",
     cloudInitFail: "云存档初始化失败，当前使用本地存档。",
-    needFirebase: "需要先配置 Firebase。",
+    needSupabase: "需要先配置 Supabase。",
     loginSuccess: "登录成功",
     googleFail: "Google 登录失败",
     needEmail: "请输入邮箱和密码。",
@@ -179,8 +179,8 @@ const COPY = {
     coinIncome: (amount) => `${amount} coins/sec`,
     nzdIncome: (amount) => `${amount}/sec`,
     loginTitle: "Cloud Save",
-    firebaseLocal: "Firebase is not configured. Local save is active.",
-    firebaseLocalPlay: "Firebase is not configured. Using local save.",
+    supabaseLocal: "Supabase is not configured. Local save is active.",
+    supabaseLocalPlay: "Supabase is not configured. Using local save.",
     cloudInit: "Cloud save is starting...",
     cloudHint: "Login to save progress to the cloud.",
     signedIn: (name) => `Signed in: ${name}`,
@@ -209,7 +209,7 @@ const COPY = {
     cloudLoaded: "Cloud save loaded",
     cloudReadFail: "Cloud save read failed",
     cloudInitFail: "Cloud save failed. Using local save.",
-    needFirebase: "Firebase must be configured first.",
+    needSupabase: "Supabase must be configured first.",
     loginSuccess: "Login success",
     googleFail: "Google login failed",
     needEmail: "Enter email and password.",
@@ -226,6 +226,7 @@ const VOUCHERS = [
   { id: "gogo-10", label: "GO GO SHOP $10 代金券", value: 10 }
 ];
 const SAVE_KEY = "happy-sheep-farm-save-v5";
+const SUPABASE_SAVE_TABLE = "farm_saves";
 const OLD_SAVE_KEYS = [
   "happy-sheep-farm-save-v4",
   "happy-sheep-farm-save-v3",
@@ -323,9 +324,7 @@ const cloud = {
   enabled: false,
   ready: false,
   user: null,
-  auth: null,
-  db: null,
-  modules: null,
+  client: null,
   lastSaveAt: 0,
   saveTimer: null
 };
@@ -1348,36 +1347,46 @@ function toast(message) {
   toastTimer = setTimeout(() => dom.toast.classList.remove("show"), 1700);
 }
 
-function hasFirebaseConfig() {
-  return Boolean(firebaseConfig && firebaseConfig.apiKey && !String(firebaseConfig.apiKey).includes("YOUR_"));
+function hasSupabaseConfig() {
+  return Boolean(
+    supabaseConfig
+    && supabaseConfig.url
+    && supabaseConfig.anonKey
+    && !String(supabaseConfig.url).includes("YOUR_")
+    && !String(supabaseConfig.anonKey).includes("YOUR_")
+  );
 }
 
 async function setupCloudSave() {
-  if (!hasFirebaseConfig()) {
+  if (!hasSupabaseConfig()) {
     cloud.ready = true;
-    updateAuthStatus(text("firebaseLocalPlay"));
+    updateAuthStatus(text("supabaseLocalPlay"));
     return;
   }
 
   try {
-    const [appModule, authModule, firestoreModule] = await Promise.all([
-      import("https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js"),
-      import("https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js"),
-      import("https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js")
-    ]);
-
-    const app = appModule.initializeApp(firebaseConfig);
-    cloud.auth = authModule.getAuth(app);
-    cloud.db = firestoreModule.getFirestore(app);
-    cloud.modules = { ...authModule, ...firestoreModule };
+    const { createClient } = await import("https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm");
+    cloud.client = createClient(supabaseConfig.url, supabaseConfig.anonKey, {
+      auth: {
+        persistSession: true,
+        autoRefreshToken: true,
+        detectSessionInUrl: true
+      }
+    });
     cloud.enabled = true;
     cloud.ready = true;
 
-    authModule.onAuthStateChanged(cloud.auth, async (user) => {
-      cloud.user = user;
+    const { data } = await cloud.client.auth.getSession();
+    cloud.user = data.session?.user || null;
+    updateAuthStatus(authStatusText());
+    renderHud();
+    if (cloud.user) await loadCloudGame();
+
+    cloud.client.auth.onAuthStateChange(async (event, session) => {
+      cloud.user = session?.user || null;
       updateAuthStatus(authStatusText());
       renderHud();
-      if (user) await loadCloudGame();
+      if (cloud.user && event !== "INITIAL_SESSION") await loadCloudGame();
     });
   } catch (error) {
     cloud.ready = true;
@@ -1387,10 +1396,10 @@ async function setupCloudSave() {
 }
 
 function authStatusText() {
-  if (!hasFirebaseConfig()) return text("firebaseLocal");
+  if (!hasSupabaseConfig()) return text("supabaseLocal");
   if (!cloud.enabled) return text("cloudInit");
   if (!cloud.user) return text("cloudHint");
-  return text("signedIn", cloud.user.email || cloud.user.displayName || "Google 用户");
+  return text("signedIn", cloud.user.email || cloud.user.user_metadata?.full_name || "Google 用户");
 }
 
 function updateAuthStatus(text) {
@@ -1398,23 +1407,21 @@ function updateAuthStatus(text) {
   if (status) status.textContent = text;
 }
 
-function cloudDocRef() {
-  return cloud.modules.doc(cloud.db, "farmSaves", cloud.user.uid);
-}
-
 async function loadCloudGame() {
   if (!cloud.enabled || !cloud.user) return;
   try {
-    const snapshot = await cloud.modules.getDoc(cloudDocRef());
-    if (snapshot.exists()) {
-      const remote = snapshot.data();
-      if (remote.state) {
-        applySavedState(remote.state, true);
-        applyOfflineIncome();
-        localStorage.setItem(SAVE_KEY, JSON.stringify(serializableState()));
-        render();
-    toast(text("cloudLoaded"));
-      }
+    const { data, error } = await cloud.client
+      .from(SUPABASE_SAVE_TABLE)
+      .select("state")
+      .eq("user_id", cloud.user.id)
+      .maybeSingle();
+    if (error) throw error;
+    if (data?.state) {
+      applySavedState(data.state, true);
+      applyOfflineIncome();
+      localStorage.setItem(SAVE_KEY, JSON.stringify(serializableState()));
+      render();
+      toast(text("cloudLoaded"));
     } else {
       await saveCloudGame(true);
     }
@@ -1442,24 +1449,34 @@ async function saveCloudGame(force = false) {
   if (!cloud.enabled || !cloud.user || (!force && Date.now() - cloud.lastSaveAt < 900)) return;
   try {
     cloud.lastSaveAt = Date.now();
-    await cloud.modules.setDoc(cloudDocRef(), {
-      state: serializableState(),
-      updatedAt: cloud.modules.serverTimestamp()
-    }, { merge: true });
+    const { error } = await cloud.client
+      .from(SUPABASE_SAVE_TABLE)
+      .upsert({
+        user_id: cloud.user.id,
+        state: serializableState(),
+        updated_at: new Date().toISOString()
+      }, { onConflict: "user_id" });
+    if (error) throw error;
   } catch (error) {
     console.error(error);
   }
 }
 
+function authRedirectUrl() {
+  return `${window.location.origin}${window.location.pathname}`;
+}
+
 async function signInGoogle() {
   if (!cloud.enabled) {
-    toast(text("needFirebase"));
+    toast(text("needSupabase"));
     return;
   }
   try {
-    const provider = new cloud.modules.GoogleAuthProvider();
-    await cloud.modules.signInWithPopup(cloud.auth, provider);
-    toast(text("loginSuccess"));
+    const { error } = await cloud.client.auth.signInWithOAuth({
+      provider: "google",
+      options: { redirectTo: authRedirectUrl() }
+    });
+    if (error) throw error;
   } catch (error) {
     toast(text("googleFail"));
     console.error(error);
@@ -1468,7 +1485,7 @@ async function signInGoogle() {
 
 async function signInEmail(mode) {
   if (!cloud.enabled) {
-    toast(text("needFirebase"));
+    toast(text("needSupabase"));
     return;
   }
   const email = document.getElementById("emailInput")?.value.trim();
@@ -1478,11 +1495,14 @@ async function signInEmail(mode) {
     return;
   }
   try {
-    if (mode === "register") {
-      await cloud.modules.createUserWithEmailAndPassword(cloud.auth, email, password);
-    } else {
-      await cloud.modules.signInWithEmailAndPassword(cloud.auth, email, password);
-    }
+    const { error } = mode === "register"
+      ? await cloud.client.auth.signUp({
+        email,
+        password,
+        options: { emailRedirectTo: authRedirectUrl() }
+      })
+      : await cloud.client.auth.signInWithPassword({ email, password });
+    if (error) throw error;
     toast(text("loginSuccess"));
   } catch (error) {
     toast(mode === "register" ? text("registerFail") : text("emailFail"));
@@ -1493,7 +1513,8 @@ async function signInEmail(mode) {
 async function signOutUser() {
   if (!cloud.enabled) return;
   await saveCloudGame(true);
-  await cloud.modules.signOut(cloud.auth);
+  await cloud.client.auth.signOut();
+  cloud.user = null;
   toast(text("signedOut"));
   renderHud();
 }

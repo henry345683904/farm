@@ -1,6 +1,6 @@
 # 开心养羊场
 
-一个竖屏单页网页小游戏。玩家初始拥有 100 金币，可以购买 1 级羊，拖动同等级羊合成更高等级。羊会留在牧场里自由走动并自动产出收益。
+一个竖屏单页网页小游戏。玩家初始拥有 100 金币，可以购买羊、拖动同等级羊合成更高等级，羊会在牧场里自由走动并自动产出收益。
 
 ## 玩法
 
@@ -21,30 +21,48 @@
 - 加速期间金币速度会显示红色的额外加成，例如 `+120/秒 (加速+120)`
 - NZD 余额旁边可以提现，兑换 GO GO SHOP 代金券并生成兑换码
 - 任务、图鉴、兑换码、登录存档通过按钮弹窗打开
-- 未配置 Firebase 时，游戏会使用浏览器 localStorage 本地存档
+- 未配置 Supabase 时，游戏会使用浏览器 localStorage 本地存档
 
-## Firebase 云存档
+## Supabase 云存档
 
-项目已经接入 Firebase Authentication 和 Firestore 的前端代码。要启用 Google 登录、邮箱登录和永久云存档：
+项目已经改为使用 Supabase Auth 和 Supabase Database。要启用 Google 登录、邮箱登录和永久云存档：
 
-1. 在 Firebase Console 创建 Web App。
-2. 启用 Authentication 的 Google 和 Email/Password 登录方式。
-3. 启用 Firestore Database。
-4. 在 Authentication 的授权域名里加入 `henry345683904.github.io`。
-5. 把 Firebase Web App 配置填入 `firebase-config.js`。
+1. 在 Supabase 创建项目。
+2. 在 Authentication 里启用 Email 登录；如需 Google 登录，在 Providers 里启用 Google。
+3. 在 Authentication 的 URL Configuration 里，把 `https://henry345683904.github.io/farm/` 加入 Site URL 或 Redirect URLs。
+4. 在 SQL Editor 执行下面的建表和 RLS 规则。
+5. 把 Supabase Project URL 和 anon public key 填入 `supabase-config.js`。
 
-Firestore 规则可使用：
+```sql
+create table if not exists public.farm_saves (
+  user_id uuid primary key references auth.users(id) on delete cascade,
+  state jsonb not null,
+  updated_at timestamptz not null default now()
+);
 
-```js
-rules_version = '2';
+alter table public.farm_saves enable row level security;
 
-service cloud.firestore {
-  match /databases/{database}/documents {
-    match /farmSaves/{userId} {
-      allow read, write: if request.auth != null && request.auth.uid == userId;
-    }
-  }
-}
+drop policy if exists "Users can read own farm save" on public.farm_saves;
+create policy "Users can read own farm save"
+on public.farm_saves
+for select
+to authenticated
+using (auth.uid() = user_id);
+
+drop policy if exists "Users can insert own farm save" on public.farm_saves;
+create policy "Users can insert own farm save"
+on public.farm_saves
+for insert
+to authenticated
+with check (auth.uid() = user_id);
+
+drop policy if exists "Users can update own farm save" on public.farm_saves;
+create policy "Users can update own farm save"
+on public.farm_saves
+for update
+to authenticated
+using (auth.uid() = user_id)
+with check (auth.uid() = user_id);
 ```
 
 ## 本地打开
