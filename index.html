@@ -4,6 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>开心养羊场</title>
+    <link rel="icon" href="data:," />
     <link rel="stylesheet" href="./styles.css" />
   </head>
   <body>
@@ -20,30 +21,21 @@
         <div class="level-line">当前等级: <strong id="maxLevel">Lv.1</strong> 第<span id="pastureCount">0</span>只羊</div>
         <div class="wood-sign">
           <span class="gem"></span>
-          <strong id="coins">100</strong>
-          <strong id="income">0/秒</strong>
+          <strong id="coins">100 金币</strong>
+          <strong id="nzd">NZ$0</strong>
+          <small id="income">+0/秒</small>
         </div>
       </header>
-
-      <section id="workshopHut" class="workshop-hut" aria-label="剃羊毛工作间">
-        <div class="hut-roof"></div>
-        <div class="hut-body">
-          <div class="shear-arm"></div>
-          <div id="workshopSheep" class="workshop-sheep"></div>
-          <div id="workshopInfo" class="hut-info">空</div>
-          <span class="wool-pile"></span>
-        </div>
-        <button id="unlockSlot" class="hut-upgrade" type="button" data-testid="unlock-slot">扩建</button>
-      </section>
 
       <nav class="side-buttons" aria-label="功能按钮">
         <button type="button" data-modal="quest">任务</button>
         <button type="button" data-modal="book">图鉴</button>
         <button id="feedBoost" type="button" data-testid="feed-boost">加速</button>
+        <button id="loginButton" type="button" data-testid="login-button">登录</button>
       </nav>
 
       <section id="pasture" class="pasture-field" data-dropzone="pasture" aria-label="自由牧场">
-        <div id="pastureHint" class="pasture-hint">羊会在牧场里自由走动。拖同级羊合成，拖进剃毛条产金币。</div>
+        <div id="pastureHint" class="pasture-hint">牧场里的羊会自动产出。高等级升级需要更多同级羊，Lv.15 开始产 NZD。</div>
       </section>
 
       <section class="utility-actions" aria-label="辅助操作">
@@ -55,7 +47,7 @@
         <button id="buySheep" class="buy-button" type="button" data-testid="buy-sheep">
           <span class="cart-icon">商店</span>
           <strong>快速购买</strong>
-          <small>50 金币 · Lv.1</small>
+          <small id="buyCost">50 金币 · Lv.1</small>
         </button>
       </section>
 
@@ -71,6 +63,6 @@
       </section>
     </div>
 
-    <script src="./game.js"></script>
+    <script type="module" src="./game.js"></script>
   </body>
 </html>
