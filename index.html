@@ -22,7 +22,10 @@
         <div class="wood-sign">
           <span class="gem"></span>
           <strong id="coins">100 金币</strong>
-          <strong id="nzd">NZ$0</strong>
+          <span class="nzd-wallet">
+            <strong id="nzd">NZ$0</strong>
+            <button id="withdrawButton" type="button" data-testid="withdraw-button">提现</button>
+          </span>
           <small id="income">+0/秒</small>
         </div>
       </header>
@@ -32,8 +35,14 @@
         <button type="button" data-modal="book">图鉴</button>
         <button id="feedBoost" type="button" data-testid="feed-boost">看广告</button>
         <button type="button" data-modal="redeem">兑换</button>
+        <button type="button" data-modal="settings">设置</button>
         <button id="loginButton" type="button" data-testid="login-button">登录</button>
       </nav>
+
+      <section id="recycleBin" class="recycle-bin" aria-label="回收羊">
+        <span class="bin-lid"></span>
+        <span class="bin-body">回收</span>
+      </section>
 
       <section id="pasture" class="pasture-field" data-dropzone="pasture" aria-label="自由牧场">
         <div id="pastureHint" class="pasture-hint">牧场里的羊会自动产出。高等级升级需要更多同级羊，Lv.15 开始产 NZD。</div>

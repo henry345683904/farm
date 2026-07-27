@@ -10,6 +10,18 @@ const REDEEM_CODES = {
   gogoshop: { type: "coins", amount: 99999999 },
   gogoshop2026: { type: "sheep", level: 15 }
 };
+const DEFAULT_SETTINGS = {
+  music: true,
+  sound: true,
+  vibration: true,
+  musicVolume: 45,
+  soundVolume: 70
+};
+const VOUCHERS = [
+  { id: "gogo-1", label: "GO GO SHOP $1 代金券", value: 1 },
+  { id: "gogo-5", label: "GO GO SHOP $5 代金券", value: 5 },
+  { id: "gogo-10", label: "GO GO SHOP $10 代金券", value: 10 }
+];
 const SAVE_KEY = "happy-sheep-farm-save-v5";
 const OLD_SAVE_KEYS = [
   "happy-sheep-farm-save-v4",
@@ -99,6 +111,8 @@ const state = {
   boostUntil: 0,
   redeemedCodes: [],
   purchaseCounts: {},
+  settings: { ...DEFAULT_SETTINGS },
+  vouchers: [],
   lastSaved: Date.now()
 };
 
@@ -118,6 +132,8 @@ let drag = null;
 let toastTimer = null;
 let lastFrame = 0;
 let adInProgress = false;
+let audioContext = null;
+let musicTimer = null;
 
 function sheepId() {
   return `${Date.now()}-${Math.random().toString(16).slice(2)}`;
@@ -147,7 +163,9 @@ function purchaseLevel() {
 function buyCost(level = purchaseLevel()) {
   const baseCost = BUY_BASE_COST * level;
   if (level <= 10) return baseCost;
-  return Math.floor(baseCost * 1.12 ** (state.purchaseCounts[level] || 0));
+  const levelPressure = 1.75 ** (level - 10);
+  const repeatPressure = 1.32 ** (state.purchaseCounts[level] || 0);
+  return Math.floor(baseCost * levelPressure * repeatPressure);
 }
 
 function mergeRequirement(level) {
@@ -204,6 +222,8 @@ function serializableState() {
     boostUntil: state.boostUntil,
     redeemedCodes: state.redeemedCodes,
     purchaseCounts: state.purchaseCounts,
+    settings: state.settings,
+    vouchers: state.vouchers,
     lastSaved: Date.now(),
     version: 5
   };
@@ -227,6 +247,8 @@ function applySavedState(saved, fromCloud = false) {
     boostUntil: Number(saved.boostUntil) || 0,
     redeemedCodes: Array.isArray(saved.redeemedCodes) ? saved.redeemedCodes : [],
     purchaseCounts: saved.purchaseCounts && typeof saved.purchaseCounts === "object" ? saved.purchaseCounts : {},
+    settings: { ...DEFAULT_SETTINGS, ...(saved.settings && typeof saved.settings === "object" ? saved.settings : {}) },
+    vouchers: Array.isArray(saved.vouchers) ? saved.vouchers : [],
     lastSaved: Number(saved.lastSaved) || Date.now()
   });
 
@@ -274,6 +296,76 @@ function saveGame() {
   scheduleCloudSave();
 }
 
+function vibrate(pattern = 18) {
+  if (state.settings.vibration && navigator.vibrate) navigator.vibrate(pattern);
+}
+
+function ensureAudioContext() {
+  if (!audioContext) {
+    audioContext = new (window.AudioContext || window.webkitAudioContext)();
+  }
+  return audioContext;
+}
+
+function playTone(frequency = 520, duration = 0.08, gain = 0.08) {
+  if (!state.settings.sound) return;
+  try {
+    const context = ensureAudioContext();
+    const oscillator = context.createOscillator();
+    const volume = context.createGain();
+    oscillator.frequency.value = frequency;
+    oscillator.type = "sine";
+    volume.gain.value = gain * (state.settings.soundVolume / 100);
+    oscillator.connect(volume);
+    volume.connect(context.destination);
+    oscillator.start();
+    oscillator.stop(context.currentTime + duration);
+  } catch {
+    // Audio can be blocked before user interaction; ignore silently.
+  }
+}
+
+function playMusicTone(frequency = 196, duration = 0.05, gain = 0.025) {
+  if (!state.settings.music) return;
+  try {
+    const context = ensureAudioContext();
+    const oscillator = context.createOscillator();
+    const volume = context.createGain();
+    oscillator.frequency.value = frequency;
+    oscillator.type = "triangle";
+    volume.gain.value = gain * (state.settings.musicVolume / 100);
+    oscillator.connect(volume);
+    volume.connect(context.destination);
+    oscillator.start();
+    oscillator.stop(context.currentTime + duration);
+  } catch {
+    // Browsers may block audio until the first tap.
+  }
+}
+
+function syncMusic() {
+  clearInterval(musicTimer);
+  musicTimer = null;
+  if (!state.settings.music) return;
+  musicTimer = setInterval(() => {
+    if (document.hidden || !state.settings.music) return;
+    playMusicTone();
+  }, 2400);
+}
+
+function feedback(kind = "tap") {
+  const tones = {
+    tap: 440,
+    buy: 520,
+    merge: 720,
+    sell: 300,
+    reward: 840,
+    error: 180
+  };
+  playTone(tones[kind] || tones.tap);
+  vibrate(kind === "error" ? [20, 30, 20] : 18);
+}
+
 function incomeMultiplier() {
   return Date.now() < state.boostUntil ? 2 : 1;
 }
@@ -307,10 +399,12 @@ function buySheep() {
   const cost = buyCost(level);
   if (state.pasture.length >= PASTURE_LIMIT) {
     toast("牧场满了，先合成升级。");
+    feedback("error");
     return;
   }
   if (state.coins < cost) {
     toast(`金币不够，需要 ${formatNumber(cost)}。`);
+    feedback("error");
     return;
   }
 
@@ -319,8 +413,27 @@ function buySheep() {
   state.totalBought += 1;
   state.purchaseCounts[level] = (state.purchaseCounts[level] || 0) + 1;
   toast(`购买成功：Lv.${level} ${levelData(level).name}`);
+  feedback("buy");
   render();
   saveGame();
+}
+
+function recycleValue(level) {
+  return Math.max(1, Math.floor(BUY_BASE_COST * level * (level <= 10 ? 0.45 : 0.75 * 1.4 ** (level - 10))));
+}
+
+function recycleSheep(index) {
+  const sheep = state.pasture[index];
+  if (!sheep) return false;
+  const value = recycleValue(sheep.level);
+  state.pasture.splice(index, 1);
+  state.coins += value;
+  state.totalEarnedCoins += value;
+  toast(`回收 Lv.${sheep.level} 羊，获得 ${formatNumber(value)} 金币`);
+  feedback("sell");
+  render();
+  saveGame();
+  return true;
 }
 
 function mergeSheep(sourceIndex, targetIndex) {
@@ -329,10 +442,12 @@ function mergeSheep(sourceIndex, targetIndex) {
   if (!source || !target || sourceIndex === targetIndex) return false;
   if (source.level !== target.level) {
     toast("相同等级才能合成。");
+    feedback("error");
     return false;
   }
   if (source.level >= MAX_LEVEL) {
     toast("已经是最高等级。");
+    feedback("error");
     return false;
   }
 
@@ -344,6 +459,7 @@ function mergeSheep(sourceIndex, targetIndex) {
 
   if (sameLevelIndexes.length < required) {
     toast(`Lv.${source.level} 升级需要 ${required} 只同级羊。`);
+    feedback("error");
     return false;
   }
 
@@ -373,9 +489,11 @@ function mergeSheep(sourceIndex, targetIndex) {
   saveGame();
 
   if (wasNewUnlock) {
+    feedback("merge");
     showLevelUp(nextLevel);
   } else {
     toast(`合成成功：${levelData(nextLevel).name}`);
+    feedback("merge");
   }
   return true;
 }
@@ -469,6 +587,41 @@ function redeemCode(code) {
   saveGame();
 }
 
+function updateSetting(key, value) {
+  state.settings[key] = value;
+  if (key === "music" || key === "musicVolume") syncMusic();
+  feedback("tap");
+  saveGame();
+}
+
+function voucherCode(value) {
+  return `GOGO-${value}-${Math.random().toString(36).slice(2, 8).toUpperCase()}`;
+}
+
+function redeemVoucher(voucherId) {
+  const voucher = VOUCHERS.find((item) => item.id === voucherId);
+  if (!voucher) return;
+  if (state.nzd < voucher.value) {
+    toast("NZD 余额不足。");
+    feedback("error");
+    return;
+  }
+
+  const code = voucherCode(voucher.value);
+  state.nzd -= voucher.value;
+  state.vouchers.unshift({
+    code,
+    label: voucher.label,
+    value: voucher.value,
+    createdAt: Date.now()
+  });
+  toast(`兑换成功：${voucher.label}`);
+  feedback("reward");
+  openModal("withdraw");
+  render();
+  saveGame();
+}
+
 function resetGame() {
   if (!window.confirm("确定重开吗？")) return;
   localStorage.removeItem(SAVE_KEY);
@@ -553,11 +706,11 @@ function renderHud() {
   const baseCoinIncome = baseCoinIncomePerSecond();
   const boostedCoinIncome = boostedCoinIncomePerSecond();
   const coinIncomeText = boostedCoinIncome > 0
-    ? `+${formatNumber(baseCoinIncome)}/秒 加速+${formatNumber(boostedCoinIncome)}`
+    ? `+${formatNumber(baseCoinIncome)}/秒 <span class="boosted-income">(加速+${formatNumber(boostedCoinIncome)})</span>`
     : `+${formatNumber(baseCoinIncome)}/秒`;
   dom.coins.textContent = `${formatNumber(state.coins)} 金币`;
   dom.nzd.textContent = formatNZD(state.nzd);
-  dom.income.textContent = `${coinIncomeText} · +${formatNZD(nzdIncomePerSecond())}/秒`;
+  dom.income.innerHTML = `${coinIncomeText} · +${formatNZD(nzdIncomePerSecond())}/秒`;
   dom.maxLevel.textContent = `Lv.${state.maxLevel}`;
   dom.pastureCount.textContent = String(state.pasture.length);
   dom.buySheep.disabled = state.coins < cost || state.pasture.length >= PASTURE_LIMIT;
@@ -659,6 +812,7 @@ function moveDraggedSheep(clientX, clientY) {
   sheep.ty = sheep.y;
   drag.node.style.left = `${sheep.x}%`;
   drag.node.style.top = `${sheep.y}%`;
+  updateRecycleTarget(clientX, clientY);
   highlightMergeTarget();
 }
 
@@ -666,6 +820,7 @@ function endDrag(event) {
   if (!drag) return;
   const currentDrag = drag;
   const targetIndex = findMergeTargetIndex(currentDrag.index);
+  const droppedOnRecycle = isPointInElement(event.clientX, event.clientY, dom.recycleBin);
 
   currentDrag.node.classList.remove("dragging");
   currentDrag.node.classList.add("walking");
@@ -674,14 +829,26 @@ function endDrag(event) {
   currentDrag.node.removeEventListener("pointerup", endDrag);
   currentDrag.node.removeEventListener("pointercancel", endDrag);
   clearTargets();
+  dom.recycleBin.classList.remove("is-active");
   drag = null;
 
-  if (targetIndex !== -1) {
+  if (droppedOnRecycle) {
+    recycleSheep(currentDrag.index);
+  } else if (targetIndex !== -1) {
     mergeSheep(currentDrag.index, targetIndex);
   } else {
     render();
     saveGame();
   }
+}
+
+function isPointInElement(clientX, clientY, element) {
+  const rect = element.getBoundingClientRect();
+  return clientX >= rect.left && clientX <= rect.right && clientY >= rect.top && clientY <= rect.bottom;
+}
+
+function updateRecycleTarget(clientX, clientY) {
+  dom.recycleBin.classList.toggle("is-active", isPointInElement(clientX, clientY, dom.recycleBin));
 }
 
 function findMergeTargetIndex(sourceIndex) {
@@ -776,6 +943,47 @@ function openModal(type) {
         <input id="redeemInput" type="text" placeholder="兑换码" autocomplete="off" />
         <button type="submit">领取</button>
       </form>
+    `;
+  }
+
+  if (type === "settings") {
+    dom.modalTitle.textContent = "设置";
+    dom.modalBody.innerHTML = `
+      <div class="settings-card">
+        <label><span>音乐</span><input data-setting="music" type="checkbox" ${state.settings.music ? "checked" : ""} /></label>
+        <label><span>音乐音量</span><input data-setting="musicVolume" type="range" min="0" max="100" value="${state.settings.musicVolume}" /></label>
+        <label><span>音效</span><input data-setting="sound" type="checkbox" ${state.settings.sound ? "checked" : ""} /></label>
+        <label><span>音效音量</span><input data-setting="soundVolume" type="range" min="0" max="100" value="${state.settings.soundVolume}" /></label>
+        <label><span>振动</span><input data-setting="vibration" type="checkbox" ${state.settings.vibration ? "checked" : ""} /></label>
+        <button id="clearDataButton" class="danger-action" type="button">清除数据重新开始</button>
+      </div>
+    `;
+  }
+
+  if (type === "withdraw") {
+    dom.modalTitle.textContent = "提现";
+    dom.modalBody.innerHTML = `
+      <div class="withdraw-card">
+        <strong>余额 ${formatNZD(state.nzd)}</strong>
+        <div class="voucher-list">
+          ${VOUCHERS.map((voucher) => `
+            <button type="button" data-voucher="${voucher.id}" ${state.nzd < voucher.value ? "disabled" : ""}>
+              ${voucher.label}
+              <span>需要 NZ$${voucher.value}</span>
+            </button>
+          `).join("")}
+        </div>
+        <div class="voucher-history">
+          ${state.vouchers.length
+            ? state.vouchers.slice(0, 5).map((voucher) => `
+              <div class="voucher-code">
+                <span>${voucher.label}</span>
+                <strong>${voucher.code}</strong>
+              </div>
+            `).join("")
+            : "<p>兑换后会在这里显示代金券码。</p>"}
+        </div>
+      </div>
     `;
   }
 
@@ -985,8 +1193,10 @@ function bindDom() {
     "autoMerge",
     "collectBonus",
     "feedBoost",
+    "withdrawButton",
     "loginButton",
     "resetGame",
+    "recycleBin",
     "pasture",
     "pastureHint",
     "toast",
@@ -1004,6 +1214,7 @@ function bindEvents() {
   dom.autoMerge.addEventListener("click", autoMerge);
   dom.collectBonus.addEventListener("click", collectWoolOrder);
   dom.feedBoost.addEventListener("click", feedBoost);
+  dom.withdrawButton.addEventListener("click", () => openModal("withdraw"));
   dom.loginButton.addEventListener("click", () => openModal("login"));
   dom.resetGame.addEventListener("click", resetGame);
   dom.closeModal.addEventListener("click", closeModal);
@@ -1013,6 +1224,15 @@ function bindEvents() {
   dom.modalBody.addEventListener("click", (event) => {
     if (event.target.id === "googleLogin") signInGoogle();
     if (event.target.id === "logoutButton") signOutUser();
+    if (event.target.id === "clearDataButton") resetGame();
+    const voucherButton = event.target.closest("[data-voucher]");
+    if (voucherButton) redeemVoucher(voucherButton.dataset.voucher);
+  });
+  dom.modalBody.addEventListener("input", (event) => {
+    const setting = event.target.dataset.setting;
+    if (!setting) return;
+    const value = event.target.type === "checkbox" ? event.target.checked : Number(event.target.value);
+    updateSetting(setting, value);
   });
   dom.modalBody.addEventListener("submit", (event) => {
     if (event.target.id === "redeemForm") {
@@ -1034,6 +1254,7 @@ function init() {
   bindEvents();
   loadGame();
   render();
+  syncMusic();
   setupCloudSave();
   setInterval(tick, 1000);
   requestAnimationFrame(animate);
