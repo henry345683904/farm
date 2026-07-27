@@ -812,7 +812,7 @@ async function watchRewardedAd() {
 }
 
 function redeemCode(code) {
-  const normalized = code.trim().toLowerCase();
+  const normalized = code.toLowerCase().replace(/[^a-z0-9]/g, "");
   const reward = REDEEM_CODES[normalized];
   if (!reward) {
     toast(text("badCode"));
