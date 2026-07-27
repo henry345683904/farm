@@ -137,13 +137,13 @@ button {
   z-index: 2;
   display: grid;
   justify-items: center;
-  gap: 12px;
-  padding-top: 104px;
+  gap: 7px;
+  padding-top: 18px;
 }
 
 .level-line {
-  font-size: clamp(1rem, 3.1vh, 1.45rem);
-  font-weight: 650;
+  font-size: clamp(0.92rem, 2.7vh, 1.28rem);
+  font-weight: 800;
   text-shadow: 0 1px 0 rgba(255, 255, 255, 0.45);
 }
 
@@ -157,8 +157,8 @@ button {
   grid-template-columns: 38px 1fr 1fr;
   align-items: center;
   gap: 13px;
-  min-width: 45%;
-  padding: 9px 24px 11px;
+  min-width: 43%;
+  padding: 8px 22px 10px;
   color: #21130d;
   font-size: clamp(1.08rem, 3.7vh, 1.85rem);
   background: linear-gradient(180deg, #f2c467, #d99530);
@@ -170,9 +170,9 @@ button {
   content: "";
   position: absolute;
   left: 50%;
-  bottom: -44px;
+  bottom: -38px;
   width: 17px;
-  height: 44px;
+  height: 38px;
   border-radius: 0 0 8px 8px;
   background: linear-gradient(90deg, #9c5721, #c77a30);
   transform: translateX(-50%);
@@ -191,11 +191,11 @@ button {
 
 .workshop-hut {
   position: absolute;
-  top: 212px;
-  right: 12px;
+  top: 168px;
+  right: 10px;
   z-index: 8;
-  width: 128px;
-  height: 118px;
+  width: 162px;
+  height: 154px;
   filter: drop-shadow(0 10px 12px rgba(50, 71, 30, 0.2));
 }
 
@@ -203,8 +203,8 @@ button {
   position: absolute;
   left: 8px;
   top: 0;
-  width: 112px;
-  height: 46px;
+  width: 146px;
+  height: 58px;
   border-radius: 14px 14px 8px 8px;
   background: linear-gradient(145deg, #f7d978, #c9872f);
   clip-path: polygon(50% 0, 100% 68%, 91% 100%, 9% 100%, 0 68%);
@@ -212,10 +212,10 @@ button {
 
 .hut-body {
   position: absolute;
-  left: 15px;
-  right: 5px;
-  bottom: 13px;
-  height: 78px;
+  left: 13px;
+  right: 7px;
+  bottom: 15px;
+  height: 104px;
   overflow: hidden;
   border: 4px solid #b87535;
   border-radius: 12px;
@@ -237,8 +237,8 @@ button {
 
 .hut-upgrade {
   position: absolute;
-  right: 8px;
-  bottom: -4px;
+  right: 9px;
+  bottom: -2px;
   min-width: 56px;
   min-height: 24px;
   border-radius: 999px;
@@ -251,8 +251,8 @@ button {
 
 .shear-arm {
   position: absolute;
-  right: 16px;
-  top: 13px;
+  right: 18px;
+  top: 17px;
   z-index: 4;
   width: 31px;
   height: 7px;
@@ -285,17 +285,18 @@ button {
 
 .workshop-sheep {
   position: absolute;
-  left: 14px;
-  bottom: 13px;
+  left: 10px;
+  bottom: 26px;
   z-index: 3;
   display: flex;
-  gap: 5px;
+  gap: 3px;
+  align-items: flex-end;
 }
 
 .workshop-mini {
   position: relative;
-  width: 42px;
-  height: 36px;
+  width: 40px;
+  height: 35px;
   animation: shornBounce 1.15s ease-in-out infinite;
 }
 
@@ -307,7 +308,9 @@ button {
   width: 29px;
   height: 18px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #fffdf8, #d9cab8);
+  background:
+    radial-gradient(circle at 30% 24%, rgba(255, 255, 255, 0.9) 0 12%, transparent 13%),
+    linear-gradient(135deg, var(--fur-hi, #fffdf8), var(--fur-mid, #d9cab8) 60%, var(--fur-low, #b99d7c));
   box-shadow: inset -5px -5px 8px rgba(64, 43, 24, 0.18);
 }
 
@@ -319,7 +322,33 @@ button {
   width: 16px;
   height: 15px;
   border-radius: 50%;
-  background: #d87575;
+  background: linear-gradient(160deg, var(--face-hi, #f0a0a0), var(--face-low, #c85d66));
+}
+
+.hut-info {
+  position: absolute;
+  left: 8px;
+  right: 8px;
+  bottom: 6px;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 20px;
+  padding: 2px 7px;
+  border-radius: 999px;
+  color: #71430f;
+  font-size: 0.68rem;
+  font-weight: 950;
+  background: rgba(255, 244, 174, 0.9);
+  box-shadow: inset 0 -2px 0 rgba(149, 78, 15, 0.12);
+}
+
+.hut-info strong,
+.hut-info span {
+  display: block;
+  white-space: nowrap;
 }
 
 .wool-pile {
@@ -337,7 +366,7 @@ button {
 
 .side-buttons {
   position: absolute;
-  top: 248px;
+  top: 210px;
   left: 12px;
   z-index: 9;
   display: grid;
@@ -361,8 +390,8 @@ button {
   position: absolute;
   left: 4.2%;
   right: 4.2%;
-  top: 36.5%;
-  height: 45%;
+  top: 32.5%;
+  height: 49%;
   z-index: 3;
   overflow: hidden;
   touch-action: none;
@@ -386,7 +415,7 @@ button {
 .pasture-hint {
   position: absolute;
   left: 50%;
-  bottom: 44px;
+  bottom: 66px;
   z-index: 2;
   width: max-content;
   max-width: 90%;
@@ -938,9 +967,12 @@ button {
 }
 
 .book-item {
-  min-height: 118px;
+  min-height: 132px;
   display: grid;
-  place-items: center;
+  grid-template-rows: 76px auto auto;
+  align-items: center;
+  justify-items: center;
+  gap: 4px;
 }
 
 .book-item.locked {
@@ -950,8 +982,17 @@ button {
 
 .book-preview {
   position: relative;
-  width: 70px;
-  height: 62px;
+  left: auto;
+  top: auto;
+  width: 76px;
+  height: 68px;
+  transform: none;
+  pointer-events: none;
+}
+
+.book-preview .sheep-level {
+  transform: scale(0.78);
+  transform-origin: left bottom;
 }
 
 .workshop-list {
@@ -963,7 +1004,7 @@ button {
 .toast {
   position: absolute;
   left: 50%;
-  bottom: 23.8%;
+  bottom: 29%;
   z-index: 50;
   max-width: 80%;
   padding: 10px 14px;

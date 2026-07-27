@@ -345,8 +345,14 @@ function renderPasture() {
 }
 
 function renderWorkshopHut() {
-  const active = state.workshop.filter(Boolean).slice(0, 2);
-  dom.workshopSheep.innerHTML = active.map(() => '<span class="workshop-mini"></span>').join("");
+  const active = state.workshop.filter(Boolean);
+  const visible = active.slice(0, 3);
+  dom.workshopSheep.innerHTML = visible
+    .map((sheep) => `<span class="workshop-mini variant-${sheep.level}" title="${levelData(sheep.level).name}"></span>`)
+    .join("");
+  dom.workshopInfo.innerHTML = active.length
+    ? `<strong>${active.length}只</strong><span>${active.map((sheep) => `Lv.${sheep.level}`).join(" ")}</span>`
+    : `<strong>空</strong><span>拖羊进来</span>`;
   dom.workshopHut.classList.toggle("has-sheep", active.length > 0);
   dom.unlockSlot.textContent = state.workshopSlots >= MAX_WORKSHOP_SLOTS
     ? "满级"
@@ -590,6 +596,7 @@ function bindDom() {
     "pasture",
     "workshopHut",
     "workshopSheep",
+    "workshopInfo",
     "toast",
     "modalBackdrop",
     "modalTitle",
