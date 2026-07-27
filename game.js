@@ -19,6 +19,7 @@ const OLD_SAVE_KEYS = [
   "happy-sheep-farm-save-v2",
   "happy-sheep-farm-save-v1"
 ];
+const MOODS = ["happy", "blink", "curious", "sleepy"];
 
 const state = {
   coins: 100,
@@ -68,7 +69,9 @@ function createSheep(level = 1, position = randomPosition()) {
     y: position.y,
     tx: position.tx ?? randomBetween(12, 88),
     ty: position.ty ?? randomBetween(16, 84),
-    speed: randomBetween(5.8, 9.5)
+    speed: randomBetween(5.8, 9.5),
+    mood: MOODS[Math.floor(Math.random() * MOODS.length)],
+    moodChangeAt: randomBetween(1200, 3600)
   };
 }
 
@@ -82,7 +85,9 @@ function normalizeSheep(raw) {
     y: Number.isFinite(Number(raw.y)) ? Number(raw.y) : pos.y,
     tx: Number.isFinite(Number(raw.tx)) ? Number(raw.tx) : pos.tx,
     ty: Number.isFinite(Number(raw.ty)) ? Number(raw.ty) : pos.ty,
-    speed: Number.isFinite(Number(raw.speed)) ? Number(raw.speed) : randomBetween(5.8, 9.5)
+    speed: Number.isFinite(Number(raw.speed)) ? Number(raw.speed) : randomBetween(5.8, 9.5),
+    mood: MOODS.includes(raw.mood) ? raw.mood : "happy",
+    moodChangeAt: randomBetween(800, 2800)
   };
 }
 
@@ -311,6 +316,7 @@ function sheepMarkup(sheep) {
     <span class="sheep-ear right"></span>
     <span class="sheep-face"></span>
     <span class="sheep-nose"></span>
+    <span class="sheep-mouth"></span>
     <span class="sheep-hat"></span>
     <span class="sheep-horn left"></span>
     <span class="sheep-horn right"></span>
@@ -325,7 +331,7 @@ function sheepMarkup(sheep) {
 
 function sheepButton(sheep, index) {
   const button = document.createElement("button");
-  button.className = `sheep-token walking variant-${sheep.level}`;
+  button.className = `sheep-token walking variant-${sheep.level} mood-${sheep.mood || "happy"}`;
   button.type = "button";
   button.style.left = `${sheep.x}%`;
   button.style.top = `${sheep.y}%`;
@@ -346,12 +352,21 @@ function renderPasture() {
 
 function renderWorkshopHut() {
   const active = state.workshop.filter(Boolean);
-  const visible = active.slice(0, 3);
+  const visible = active.slice(0, 5);
+  const summary = active.reduce((items, sheep) => {
+    const item = items.find((entry) => entry.level === sheep.level);
+    if (item) {
+      item.count += 1;
+    } else {
+      items.push({ level: sheep.level, count: 1 });
+    }
+    return items;
+  }, []);
   dom.workshopSheep.innerHTML = visible
     .map((sheep) => `<span class="workshop-mini variant-${sheep.level}" title="${levelData(sheep.level).name}"></span>`)
     .join("");
   dom.workshopInfo.innerHTML = active.length
-    ? `<strong>${active.length}只</strong><span>${active.map((sheep) => `Lv.${sheep.level}`).join(" ")}</span>`
+    ? `<strong>${active.length}只</strong><span>${summary.map((item) => `Lv.${item.level}x${item.count}`).join(" ")}</span>`
     : `<strong>空</strong><span>拖羊进来</span>`;
   dom.workshopHut.classList.toggle("has-sheep", active.length > 0);
   dom.unlockSlot.textContent = state.workshopSlots >= MAX_WORKSHOP_SLOTS
@@ -367,6 +382,7 @@ function renderHud() {
   dom.pastureCount.textContent = String(sheepCount);
   dom.buySheep.disabled = state.coins < BUY_COST || state.pasture.length >= PASTURE_LIMIT;
   dom.feedBoost.textContent = Date.now() < state.boostUntil ? "加速中" : "加速";
+  dom.pastureHint.classList.toggle("is-hidden", state.totalMerged >= 2);
 }
 
 function render() {
@@ -381,6 +397,7 @@ function updateSheepPositions() {
     if (!node || node.classList.contains("dragging")) return;
     node.style.left = `${sheep.x}%`;
     node.style.top = `${sheep.y}%`;
+    MOODS.forEach((mood) => node.classList.toggle(`mood-${mood}`, sheep.mood === mood));
   });
 }
 
@@ -391,6 +408,11 @@ function animate(time) {
 
   state.pasture.forEach((sheep) => {
     if (drag && drag.sheepId === sheep.id) return;
+    if (!sheep.moodChangeAt || time > sheep.moodChangeAt) {
+      sheep.mood = MOODS[Math.floor(Math.random() * MOODS.length)];
+      sheep.moodChangeAt = time + randomBetween(1200, 4200);
+    }
+
     const dx = sheep.tx - sheep.x;
     const dy = sheep.ty - sheep.y;
     const distance = Math.sqrt(dx * dx + dy * dy);
@@ -594,6 +616,7 @@ function bindDom() {
     "resetGame",
     "unlockSlot",
     "pasture",
+    "pastureHint",
     "workshopHut",
     "workshopSheep",
     "workshopInfo",
