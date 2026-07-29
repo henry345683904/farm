@@ -1543,6 +1543,12 @@ function googleUnavailableText() {
     : "Google \u767b\u5f55\u8fd8\u6ca1\u6709\u5f00\u542f";
 }
 
+function emailConfirmText() {
+  return currentLanguage() === "en"
+    ? "Check your email to confirm registration."
+    : "\u8bf7\u53bb\u90ae\u7bb1\u786e\u8ba4\u6ce8\u518c";
+}
+
 async function loadAuthProviderSettings() {
   cloud.googleEnabled = true;
   try {
@@ -1649,13 +1655,18 @@ async function signInEmail(mode) {
     return;
   }
   try {
-    const { error } = mode === "register"
-      ? await cloud.client.auth.signUp({
+    if (mode === "register") {
+      const { data, error } = await cloud.client.auth.signUp({
         email,
         password,
         options: { emailRedirectTo: authRedirectUrl() }
-      })
-      : await cloud.client.auth.signInWithPassword({ email, password });
+      });
+      if (error) throw error;
+      toast(data?.session ? text("loginSuccess") : emailConfirmText());
+      return;
+    }
+
+    const { error } = await cloud.client.auth.signInWithPassword({ email, password });
     if (error) throw error;
     toast(text("loginSuccess"));
   } catch (error) {
