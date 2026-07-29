@@ -348,6 +348,7 @@ const state = {
 
 const cloud = {
   enabled: false,
+  googleEnabled: false,
   ready: false,
   user: null,
   client: null,
@@ -1339,11 +1340,12 @@ function openModal(type) {
   }
 
   if (type === "login") {
+    const googleDisabled = cloud.enabled && !cloud.googleEnabled;
     dom.modalTitle.textContent = text("loginTitle");
     dom.modalBody.innerHTML = `
       <div class="auth-card">
         <p id="authStatus">${authStatusText()}</p>
-        <button id="googleLogin" type="button">${text("googleLogin")}</button>
+        <button id="googleLogin" type="button" ${googleDisabled ? "disabled" : ""}>${googleDisabled ? googleDisabledText() : text("googleLogin")}</button>
         <form id="emailAuthForm" class="auth-form">
           <input id="emailInput" type="email" placeholder="${text("email")}" autocomplete="email" />
           <input id="passwordInput" type="password" placeholder="${text("password")}" autocomplete="current-password" />
@@ -1498,6 +1500,7 @@ async function setupCloudSave() {
     });
     cloud.enabled = true;
     cloud.ready = true;
+    await loadAuthProviderSettings();
 
     const { data } = await cloud.client.auth.getSession();
     cloud.user = data.session?.user || null;
@@ -1528,6 +1531,30 @@ function authStatusText() {
 function updateAuthStatus(text) {
   const status = document.getElementById("authStatus");
   if (status) status.textContent = text;
+}
+
+function googleDisabledText() {
+  return currentLanguage() === "en" ? "Google off" : "Google \u672a\u5f00\u542f";
+}
+
+function googleUnavailableText() {
+  return currentLanguage() === "en"
+    ? "Google login is not enabled yet."
+    : "Google \u767b\u5f55\u8fd8\u6ca1\u6709\u5f00\u542f";
+}
+
+async function loadAuthProviderSettings() {
+  cloud.googleEnabled = true;
+  try {
+    const response = await fetch(`${supabaseConfig.url}/auth/v1/settings`, {
+      headers: { apikey: supabaseConfig.anonKey }
+    });
+    if (!response.ok) return;
+    const settings = await response.json();
+    cloud.googleEnabled = Boolean(settings?.external?.google);
+  } catch (error) {
+    console.error(error);
+  }
 }
 
 async function loadCloudGame() {
@@ -1592,6 +1619,10 @@ function authRedirectUrl() {
 async function signInGoogle() {
   if (!cloud.enabled) {
     toast(text("needSupabase"));
+    return;
+  }
+  if (!cloud.googleEnabled) {
+    toast(googleUnavailableText());
     return;
   }
   try {
