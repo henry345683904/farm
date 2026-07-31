@@ -1486,7 +1486,7 @@ function openModal(type) {
             : `<p>${text("voucherEmpty")}</p>`}
         </div>
         <small>${text("voucherCopyHint")}</small>
-        <button id="goGoShopButton" class="shop-link-button" type="button">${text("useVoucher")}</button>
+        <a id="goGoShopButton" class="shop-link-button" href="https://www.gogoshop.nz/" target="_self">${text("useVoucher")}</a>
       </div>
     `;
   }
@@ -1823,7 +1823,6 @@ function bindEvents() {
     if (event.target.id === "clearDataButton") openModal("reset-confirm");
     if (event.target.id === "confirmResetButton") resetGame();
     if (event.target.id === "cancelResetButton") openModal("settings");
-    if (event.target.id === "goGoShopButton") window.open("https://gogoshop.nz", "_blank", "noopener");
     const copyButton = event.target.closest("[data-copy-voucher]");
     if (copyButton) copyVoucherCode(copyButton.dataset.copyVoucher);
     const voucherButton = event.target.closest("[data-voucher]");

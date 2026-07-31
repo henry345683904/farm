@@ -1432,11 +1432,14 @@ button {
 }
 
 .shop-link-button {
+  display: grid;
+  place-items: center;
   width: 100%;
   min-height: 38px;
   border-radius: 999px;
   color: #fff8d2;
   font-weight: 950;
+  text-decoration: none;
   background: linear-gradient(180deg, #41a766, #187644);
   box-shadow: inset 0 -4px 0 rgba(5, 50, 26, 0.24);
 }
