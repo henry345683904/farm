@@ -45,7 +45,7 @@ node tools/generate-sheep-art.mjs
 1. 在 Supabase 创建项目。
 2. 在 Authentication 里启用 Email 登录；如需 Google 登录，在 Providers 里启用 Google。
 3. 在 Authentication 的 URL Configuration 里，把 `https://henry345683904.github.io/farm/` 加入 Site URL 或 Redirect URLs。
-4. 在 SQL Editor 先执行存档表 SQL，再执行代金券表 SQL。仓库里的 `supabase-shop-vouchers.sql` 已经包含完整建表、RLS 和状态更新时间触发器。代金券表会把本游戏生成的券统一标记为 `happy_sheep_farm` / `开心羊圈`，后台可以按这个字段单独筛选。
+4. 在 SQL Editor 先执行存档表 SQL，再执行代金券表 SQL。商店仓库里的 `supabase-vouchers.sql` 现在也包含 `import_game_voucher`，这是让羊场券能在 GO GO SHOP 真正兑换的那一步。
 5. 把 Supabase Project URL 和 anon public key 填入 `supabase-config.js`。
 
 ```sql

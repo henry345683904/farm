@@ -19,6 +19,9 @@ const SHOP_VOUCHER_TABLE = "shop_vouchers";
 const SHOP_VOUCHER_SOURCE_KEY = "happy_sheep_farm";
 const SHOP_VOUCHER_CURRENCY = "NZD";
 const SHOP_VOUCHER_STATUSES = ["pending_redeem", "pending_use", "used"];
+const GO_GO_SHOP_SUPABASE_URL = "https://ucnkcddhrptqpdlvcohy.supabase.co";
+const GO_GO_SHOP_SUPABASE_ANON_KEY = "sb_publishable_zv6WbyD1hZKUx-Zyak-fPw_e1mURTN8";
+const GO_GO_SHOP_VOUCHER_IMPORT_TOKEN = "HAPPY_SHEEP_FARM_2026_IMPORT";
 const DEFAULT_SETTINGS = {
   music: true,
   sound: true,
@@ -122,9 +125,10 @@ const COPY = {
     voucherCopyHint: "点击代金券码可自动复制",
     voucherCopied: "代金券码已复制",
     voucherCopyFail: "复制失败，请长按手动复制",
+    voucherShopSyncFail: "已生成，但 GO GO SHOP 同步失败。",
     useVoucher: "去 GO GO SHOP 使用",
     shopVoucherTitle: "开心羊圈代金券",
-    shopVoucherHint: "已同步到后台，状态会显示待兑换、待使用、已使用。",
+    shopVoucherHint: "已同步到 GO GO SHOP 后台，状态会显示待兑换、待使用、已使用。",
     shopVoucherBrand: "开心羊圈",
     shopVoucherStatusPendingRedeem: "待兑换",
     shopVoucherStatusPendingUse: "待使用",
@@ -253,9 +257,10 @@ const COPY = {
     voucherCopyHint: "Tap a code to copy",
     voucherCopied: "Code copied",
     voucherCopyFail: "Copy failed. Hold to copy",
+    voucherShopSyncFail: "Generated locally, but GO GO SHOP sync failed.",
     useVoucher: "Use at GO GO SHOP",
     shopVoucherTitle: "Happy Sheep Farm vouchers",
-    shopVoucherHint: "Synced to the backend. Status shows to redeem, to use, or used.",
+    shopVoucherHint: "Synced to GO GO SHOP. Status shows to redeem, to use, or used.",
     shopVoucherBrand: "Happy Sheep Farm",
     shopVoucherStatusPendingRedeem: "To redeem",
     shopVoucherStatusPendingUse: "To use",
@@ -517,6 +522,7 @@ function normalizeShopVoucherRecord(record) {
     updatedAt,
     redeemedAt: parseOptionalVoucherTime(record?.redeemedAt ?? record?.redeemed_at),
     usedAt: parseOptionalVoucherTime(record?.usedAt ?? record?.used_at),
+    shopSyncState: record?.shopSyncState || record?.shop_sync_state || "pending",
     syncState: record?.syncState || (record?.backendId || record?.id ? "synced" : "pending")
   };
 }
@@ -543,6 +549,7 @@ function serializeShopVoucherRecord(record) {
     updatedAt: record.updatedAt || Date.now(),
     redeemedAt: record.redeemedAt || null,
     usedAt: record.usedAt || null,
+    shopSyncState: record.shopSyncState || "pending",
     backendId: record.backendId || null,
     syncState: record.syncState || "pending"
   };
@@ -552,11 +559,11 @@ function mergeShopVoucherLists(localList, remoteList) {
   const remoteByCode = new Map(remoteList.map((item) => [item.code, item]));
   const merged = localList.map((item) => {
     const remote = remoteByCode.get(item.code);
-    return remote ? { ...item, ...remote, syncState: "synced" } : item;
+    return remote ? { ...item, ...remote, shopSyncState: item.shopSyncState || remote.shopSyncState || "pending", syncState: "synced" } : item;
   });
   remoteList.forEach((item) => {
     if (!merged.some((existing) => existing.code === item.code)) {
-      merged.unshift({ ...item, syncState: "synced" });
+      merged.unshift({ ...item, shopSyncState: item.shopSyncState || "pending", syncState: "synced" });
     }
   });
   return merged
@@ -1207,6 +1214,46 @@ function shopVoucherRecordPayload(record) {
   };
 }
 
+function gogoShopVoucherName(record) {
+  const value = `GO GO SHOP $${record.value}`;
+  return `${shopVoucherBrandLabel()} · ${value}`;
+}
+
+async function importVoucherToGogoShop(record) {
+  const response = await fetch(`${GO_GO_SHOP_SUPABASE_URL}/rest/v1/rpc/import_game_voucher`, {
+    method: "POST",
+    headers: {
+      apikey: GO_GO_SHOP_SUPABASE_ANON_KEY,
+      Authorization: `Bearer ${GO_GO_SHOP_SUPABASE_ANON_KEY}`,
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      p_code: record.code,
+      p_name: gogoShopVoucherName(record),
+      p_discount_type: "fixed",
+      p_discount_value: record.value,
+      p_minimum_spend: 0,
+      p_maximum_discount: null,
+      p_starts_at: new Date(record.createdAt || Date.now()).toISOString(),
+      p_expires_at: null,
+      p_total_redemption_limit: 1,
+      p_per_customer_limit: 1,
+      p_token: GO_GO_SHOP_VOUCHER_IMPORT_TOKEN
+    })
+  });
+
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    throw new Error(String(data?.message || data?.error || "GO GO SHOP sync failed"));
+  }
+  const index = state.vouchers.findIndex((item) => item.code === record.code);
+  if (index !== -1) {
+    state.vouchers[index] = { ...state.vouchers[index], shopSyncState: "synced" };
+    saveGame();
+  }
+  return data;
+}
+
 async function syncShopVoucherRecord(record) {
   if (!cloud.enabled || !cloud.user || !cloud.client) return null;
   const payload = shopVoucherRecordPayload(record);
@@ -1237,11 +1284,27 @@ async function syncPendingShopVouchers() {
   return results;
 }
 
+async function syncPendingShopVoucherImports() {
+  const pending = state.vouchers.filter((item) => item.shopSyncState !== "synced");
+  if (!pending.length) return [];
+  const results = [];
+  for (const record of pending) {
+    try {
+      const imported = await importVoucherToGogoShop(record);
+      if (imported) results.push(imported);
+    } catch (error) {
+      console.error(error);
+    }
+  }
+  return results;
+}
+
 async function refreshShopVoucherRecords() {
   if (!cloud.enabled || !cloud.user || !cloud.client) return [];
   if (cloud.voucherSyncInFlight) return [];
   cloud.voucherSyncInFlight = true;
   try {
+    await syncPendingShopVoucherImports();
     await syncPendingShopVouchers();
     const { data, error } = await cloud.client
       .from(SHOP_VOUCHER_TABLE)
@@ -1383,6 +1446,10 @@ function redeemVoucher(voucherId) {
   toast(text("voucherSuccess", shopVoucherDisplayLabel(record)));
   feedback("reward");
   syncShopVoucherRecord(record).catch((error) => console.error(error));
+  importVoucherToGogoShop(record).catch((error) => {
+    console.error(error);
+    toast(text("voucherShopSyncFail"));
+  });
   openModal("withdraw");
   render();
   saveGame();
@@ -2273,6 +2340,7 @@ function init() {
   bindDom();
   bindEvents();
   loadGame();
+  syncPendingShopVoucherImports().catch((error) => console.error(error));
   render();
   syncMusic();
   setupCloudSave();
