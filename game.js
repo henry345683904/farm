@@ -128,10 +128,10 @@ const COPY = {
     voucherShopSyncFail: "已生成，但 GO GO SHOP 同步失败。",
     useVoucher: "去 GO GO SHOP 使用",
     shopVoucherTitle: "开心羊圈代金券",
-    shopVoucherHint: "已同步到 GO GO SHOP 后台，状态会显示待兑换、待使用、已使用。",
+    shopVoucherHint: "已同步到 GO GO SHOP 后台，状态会显示待兑换、已兑换、已使用。",
     shopVoucherBrand: "开心羊圈",
     shopVoucherStatusPendingRedeem: "待兑换",
-    shopVoucherStatusPendingUse: "待使用",
+    shopVoucherStatusPendingUse: "已兑换",
     shopVoucherStatusUsed: "已使用",
     bankWithdrawIntro: "NZ$50 可提现一次，NZ$100 可不限次数提现。请填写银行卡信息，承诺三个工作日到账。",
     bankWithdrawOnce: "仅限一次",
@@ -260,10 +260,10 @@ const COPY = {
     voucherShopSyncFail: "Generated locally, but GO GO SHOP sync failed.",
     useVoucher: "Use at GO GO SHOP",
     shopVoucherTitle: "Happy Sheep Farm vouchers",
-    shopVoucherHint: "Synced to GO GO SHOP. Status shows to redeem, to use, or used.",
+    shopVoucherHint: "Synced to GO GO SHOP. Status shows to redeem, redeemed, or used.",
     shopVoucherBrand: "Happy Sheep Farm",
     shopVoucherStatusPendingRedeem: "To redeem",
-    shopVoucherStatusPendingUse: "To use",
+    shopVoucherStatusPendingUse: "Redeemed",
     shopVoucherStatusUsed: "Used",
     bankWithdrawIntro: "NZ$50 once. NZ$100 unlimited. Enter bank details. Paid in 3 business days.",
     bankWithdrawOnce: "one-time",
@@ -495,13 +495,17 @@ function normalizeShopVoucherStatus(status) {
 }
 
 function parseVoucherTime(value) {
-  const time = Number(value);
-  return Number.isFinite(time) && time > 0 ? time : Date.now();
+  const numeric = Number(value);
+  if (Number.isFinite(numeric) && numeric > 0) return numeric;
+  const parsed = Date.parse(String(value || ""));
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : Date.now();
 }
 
 function parseOptionalVoucherTime(value) {
-  const time = Number(value);
-  return Number.isFinite(time) && time > 0 ? time : null;
+  const numeric = Number(value);
+  if (Number.isFinite(numeric) && numeric > 0) return numeric;
+  const parsed = Date.parse(String(value || ""));
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
 }
 
 function normalizeShopVoucherRecord(record) {
@@ -1299,6 +1303,70 @@ async function syncPendingShopVoucherImports() {
   return results;
 }
 
+async function fetchGogoShopVoucherStatuses(records) {
+  const codes = [...new Set(records.map((record) => String(record?.code || "").trim()).filter(Boolean))];
+  if (!codes.length) return [];
+
+  const response = await fetch(`${GO_GO_SHOP_SUPABASE_URL}/rest/v1/rpc/get_game_voucher_status`, {
+    method: "POST",
+    headers: {
+      apikey: GO_GO_SHOP_SUPABASE_ANON_KEY,
+      Authorization: `Bearer ${GO_GO_SHOP_SUPABASE_ANON_KEY}`,
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      p_codes: codes,
+      p_token: GO_GO_SHOP_VOUCHER_IMPORT_TOKEN
+    })
+  });
+
+  const data = await response.json().catch(() => []);
+  if (!response.ok) throw new Error(String(data?.message || data?.error || "GO GO SHOP status sync failed"));
+  return Array.isArray(data) ? data : [];
+}
+
+async function syncGogoShopVoucherStatuses(records) {
+  let statuses;
+  try {
+    statuses = await fetchGogoShopVoucherStatuses(records);
+  } catch (error) {
+    console.error(error);
+    return records;
+  }
+
+  const statusByCode = new Map(statuses.map((item) => [String(item.code || "").toUpperCase(), item]));
+  const nextRecords = records.map((record) => {
+    const remote = statusByCode.get(record.code.toUpperCase());
+    if (!remote) return record;
+    return {
+      ...record,
+      status: normalizeShopVoucherStatus(remote.status),
+      updatedAt: parseVoucherTime(remote.updated_at || Date.now()),
+      redeemedAt: parseOptionalVoucherTime(remote.redeemed_at),
+      usedAt: parseOptionalVoucherTime(remote.used_at)
+    };
+  });
+
+  for (const record of nextRecords) {
+    const previous = records.find((item) => item.code === record.code);
+    if (!previous || JSON.stringify({ status: previous.status, redeemedAt: previous.redeemedAt, usedAt: previous.usedAt })
+      === JSON.stringify({ status: record.status, redeemedAt: record.redeemedAt, usedAt: record.usedAt })) continue;
+    const { error } = await cloud.client
+      .from(SHOP_VOUCHER_TABLE)
+      .update({
+        status: record.status,
+        updated_at: new Date(record.updatedAt || Date.now()).toISOString(),
+        redeemed_at: record.redeemedAt ? new Date(record.redeemedAt).toISOString() : null,
+        used_at: record.usedAt ? new Date(record.usedAt).toISOString() : null
+      })
+      .eq("user_id", cloud.user.id)
+      .eq("code", record.code);
+    if (error) console.error(error);
+  }
+
+  return nextRecords;
+}
+
 async function refreshShopVoucherRecords() {
   if (!cloud.enabled || !cloud.user || !cloud.client) return [];
   if (cloud.voucherSyncInFlight) return [];
@@ -1314,7 +1382,7 @@ async function refreshShopVoucherRecords() {
       .order("created_at", { ascending: false });
     if (error) throw error;
     const remote = Array.isArray(data) ? data.map(normalizeShopVoucherRecord) : [];
-    const merged = mergeShopVoucherLists(state.vouchers, remote);
+    const merged = await syncGogoShopVoucherStatuses(mergeShopVoucherLists(state.vouchers, remote));
     const changed = JSON.stringify(merged) !== JSON.stringify(state.vouchers);
     state.vouchers = merged;
     if (changed) {
