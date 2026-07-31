@@ -257,7 +257,10 @@ const OLD_SAVE_KEYS = [
   "happy-sheep-farm-save-v1"
 ];
 const MOODS = ["happy", "blink", "curious", "sleepy"];
-const REWARDED_ADS = ["assets/ads/reward-001.mp4"];
+const REWARDED_ADS = [
+  "assets/ads/reward-001.mp4",
+  "assets/ads/reward-002.mp4"
+];
 
 const LEVEL_NAMES = [
   "棒球帽羊",
