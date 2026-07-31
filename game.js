@@ -73,7 +73,7 @@ const COPY = {
     usedCode: "这个兑换码已经领取过。",
     codeCoins: (amount) => `兑换成功，获得 ${amount} 金币`,
     codeSheep: (level, name) => `兑换成功，获得 Lv.${level} ${name}`,
-    cheatReward: "兑换成功：无限金币已开启，NZD 产出 x10000",
+    cheatReward: "兑换成功：无限金币已开启，NZD 产出 x10000，广告奖励免看",
     infiniteCoins: "∞",
     pastureFullClaim: "牧场满了，先合成后再领取。",
     nzdNotEnough: "NZD 余额不足。",
@@ -204,7 +204,7 @@ const COPY = {
     usedCode: "This code has already been used.",
     codeCoins: (amount) => `Redeemed ${amount} coins`,
     codeSheep: (level, name) => `Redeemed Lv.${level} ${name}`,
-    cheatReward: "Redeemed: infinite coins on, NZD x10000",
+    cheatReward: "Redeemed: infinite coins on, NZD x10000, ad rewards unlocked",
     infiniteCoins: "∞",
     pastureFullClaim: "Pasture full. Merge first.",
     nzdNotEnough: "Not enough NZD.",
@@ -425,6 +425,7 @@ const state = {
   redeemedCodes: [],
   purchaseCounts: {},
   infiniteCoins: false,
+  adRewardsUnlocked: false,
   nzdMultiplier: 1,
   settings: { ...DEFAULT_SETTINGS },
   vouchers: [],
@@ -697,12 +698,13 @@ function serializableState() {
     redeemedCodes: state.redeemedCodes,
     purchaseCounts: state.purchaseCounts,
     infiniteCoins: state.infiniteCoins,
+    adRewardsUnlocked: state.adRewardsUnlocked,
     nzdMultiplier: state.nzdMultiplier,
     settings: state.settings,
     vouchers: state.vouchers,
     withdrawals: state.withdrawals,
     lastSaved: Date.now(),
-    version: 5
+    version: 6
   };
 }
 
@@ -726,6 +728,7 @@ function applySavedState(saved, fromCloud = false) {
     redeemedCodes: Array.isArray(saved.redeemedCodes) ? saved.redeemedCodes : [],
     purchaseCounts: saved.purchaseCounts && typeof saved.purchaseCounts === "object" ? saved.purchaseCounts : {},
     infiniteCoins: Boolean(saved.infiniteCoins),
+    adRewardsUnlocked: Boolean(saved.adRewardsUnlocked),
     nzdMultiplier: Math.max(1, Number(saved.nzdMultiplier) || 1),
     settings: { ...DEFAULT_SETTINGS, ...(saved.settings && typeof saved.settings === "object" ? saved.settings : {}) },
     vouchers: Array.isArray(saved.vouchers) ? saved.vouchers.map(normalizeShopVoucherRecord) : [],
@@ -1029,8 +1032,9 @@ async function autoMerge() {
 
   autoMergeInProgress = true;
   dom.autoMerge.disabled = true;
-  dom.autoMerge.textContent = text("autoMergePlaying");
-  const watched = await watchRewardedAd();
+  const bypassed = Boolean(state.adRewardsUnlocked);
+  if (!bypassed) dom.autoMerge.textContent = text("autoMergePlaying");
+  const watched = bypassed ? true : await watchRewardedAd();
   const startAt = Math.max(Date.now(), state.autoMergeUntil);
   state.autoMergeUntil = startAt + AUTO_MERGE_UNLOCK_MS;
   autoMergeInProgress = false;
@@ -1062,8 +1066,9 @@ async function feedBoost() {
   if (adInProgress) return;
   adInProgress = true;
   dom.feedBoost.disabled = true;
-  dom.feedBoost.textContent = text("adPlaying");
-  const watched = await watchRewardedAd();
+  const bypassed = Boolean(state.adRewardsUnlocked);
+  if (!bypassed) dom.feedBoost.textContent = text("adPlaying");
+  const watched = bypassed ? true : await watchRewardedAd();
   const startAt = Math.max(Date.now(), state.boostUntil);
   state.boostUntil = startAt + AD_BOOST_MS;
   adInProgress = false;
@@ -1073,6 +1078,7 @@ async function feedBoost() {
 }
 
 async function watchRewardedAd() {
+  if (state.adRewardsUnlocked) return true;
   if (REWARDED_ADS.length > 0) return playLocalRewardedAd();
   if (typeof window.showRewardedAd !== "function") return false;
   try {
@@ -1142,6 +1148,7 @@ function redeemCode(code) {
   }
   if (reward.type === "cheat") {
     state.infiniteCoins = true;
+    state.adRewardsUnlocked = true;
     state.nzdMultiplier = Math.max(NZD_CHEAT_MULTIPLIER, state.nzdMultiplier || 1);
     toast(text("cheatReward"));
   }
@@ -1435,6 +1442,7 @@ function freshGameState(settings = state.settings) {
     redeemedCodes: [],
     purchaseCounts: {},
     infiniteCoins: false,
+    adRewardsUnlocked: false,
     nzdMultiplier: 1,
     settings: { ...DEFAULT_SETTINGS, ...settings },
     vouchers: [],
