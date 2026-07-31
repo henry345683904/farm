@@ -1388,6 +1388,9 @@ async function refreshShopVoucherRecords() {
     if (changed) {
       render();
       saveGame();
+      if (!dom.modalBackdrop.hidden && dom.modalBackdrop.dataset.modalType === "withdraw") {
+        openModal("withdraw");
+      }
     }
     return merged;
   } catch (error) {
