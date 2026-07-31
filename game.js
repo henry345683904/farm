@@ -6,6 +6,7 @@ const MAX_LEVEL = 25;
 const NZD_START_LEVEL = 15;
 const NZD_BASE_INCOME = 0.000000001;
 const NZD_CHEAT_MULTIPLIER = 10000;
+const NZD_UNLOCK_REWARD = 0.5;
 const AD_BOOST_MS = 5 * 60 * 1000;
 const AUTO_MERGE_UNLOCK_MS = 5 * 60 * 1000;
 const REDEEM_CODES = {
@@ -383,6 +384,28 @@ function text(key, ...args) {
 
 function currentLanguage() {
   return state.settings.language === "en" ? "en" : "zh";
+}
+
+function boostButtonLabel() {
+  return currentLanguage() === "en" ? "Boost" : "\u52a0\u901f";
+}
+
+function autoMergeButtonLabel() {
+  return currentLanguage() === "en" ? "Auto merge" : "\u81ea\u52a8\u5408\u6210";
+}
+
+function formatRemainingTime(until) {
+  const remaining = Math.max(0, until - Date.now());
+  const totalSeconds = Math.ceil(remaining / 1000);
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+  return currentLanguage() === "en"
+    ? `${minutes}m ${String(seconds).padStart(2, "0")}s`
+    : `${minutes}\u5206${String(seconds).padStart(2, "0")}\u79d2`;
+}
+
+function timedButtonLabel(label, until) {
+  return Date.now() < until ? `${label}(${formatRemainingTime(until)})` : label;
 }
 
 function adTitleText() {
@@ -786,6 +809,10 @@ function mergeSheep(sourceIndex, targetIndex) {
   state.maxLevel = Math.max(state.maxLevel, nextLevel);
   state.reputation += nextLevel * required;
   state.totalMerged += 1;
+  if (wasNewUnlock && nextLevel >= NZD_START_LEVEL) {
+    state.nzd += NZD_UNLOCK_REWARD;
+    state.totalEarnedNzd += NZD_UNLOCK_REWARD;
+  }
 
   render();
   saveGame();
@@ -820,11 +847,6 @@ function autoMergeOnce(silent = false) {
 
 async function autoMerge() {
   if (autoMergeInProgress) return;
-  if (Date.now() < state.autoMergeUntil) {
-    autoMergeOnce();
-    return;
-  }
-
   autoMergeInProgress = true;
   dom.autoMerge.disabled = true;
   dom.autoMerge.textContent = text("autoMergePlaying");
@@ -1083,10 +1105,14 @@ function coinBalanceText() {
 }
 
 function formatNZD(value) {
-  if (!value) return "NZ$0";
-  if (value >= 1) return `NZ$${value.toFixed(2)}`;
-  if (value >= 0.01) return `NZ$${value.toFixed(4)}`;
-  return `NZ$${value.toFixed(12).replace(/0+$/, "").replace(/\.$/, "")}`;
+  const amount = Number(value) || 0;
+  if (amount <= 0) return "NZ$0";
+  if (amount >= 1000) return `NZ$${amount.toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
+  if (amount >= 1) return `NZ$${amount.toFixed(2)}`;
+  if (amount >= 0.01) return `NZ$${amount.toFixed(4).replace(/0+$/, "").replace(/\.$/, "")}`;
+  if (amount >= 0.000001) return `NZ$${amount.toFixed(9).replace(/0+$/, "").replace(/\.$/, "")}`;
+  const precise = amount.toFixed(12).replace(/0+$/, "").replace(/\.$/, "");
+  return precise === "0" ? `NZ$${amount.toExponential(2)}` : `NZ$${precise}`;
 }
 
 function sheepStyleAttr(level) {
@@ -1154,7 +1180,7 @@ function renderStaticText() {
   document.querySelector('[data-modal="book"]').textContent = text("book");
   document.querySelector('[data-modal="redeem"]').textContent = text("redeem");
   document.querySelector('[data-modal="settings"]').textContent = text("settings");
-  dom.autoMerge.textContent = text("autoMerge");
+  dom.autoMerge.textContent = autoMergeButtonLabel();
   dom.collectBonus.textContent = text("woolOrder");
   dom.pastureHint.textContent = text("pastureHint");
   dom.buySheep.querySelector(".cart-icon").textContent = text("shop");
@@ -1186,15 +1212,11 @@ function renderHud() {
   dom.autoMerge.disabled = autoMergeInProgress;
   dom.autoMerge.textContent = autoMergeInProgress
     ? text("autoMergePlaying")
-    : Date.now() < state.autoMergeUntil
-    ? text("autoMergeLeft", Math.ceil((state.autoMergeUntil - Date.now()) / 60000))
-    : text("autoMerge");
+    : timedButtonLabel(autoMergeButtonLabel(), state.autoMergeUntil);
   dom.feedBoost.disabled = adInProgress;
   dom.feedBoost.textContent = adInProgress
     ? text("adPlaying")
-    : Date.now() < state.boostUntil
-    ? text("boostLeft", Math.ceil((state.boostUntil - Date.now()) / 60000))
-    : text("ad");
+    : timedButtonLabel(boostButtonLabel(), state.boostUntil);
   dom.pastureHint.classList.toggle("is-hidden", state.totalMerged >= 2);
   dom.loginButton.textContent = cloud.user ? text("loggedIn") : text("login");
 }
@@ -1500,6 +1522,7 @@ function showLevelUp(level) {
     <button class="sheep-token variant-${level}" style="${sheepStyleAttr(level)}" type="button">${sheepMarkup({ level })}</button>
     <div>Lv.${level} ${item.name}</div>
     <div>${text("levelUpBody", earn, mergeRequirement(level))}</div>
+    ${level >= NZD_START_LEVEL ? `<div>+${formatNZD(NZD_UNLOCK_REWARD)}</div>` : ""}
   `;
   dom.modalBackdrop.hidden = false;
 }

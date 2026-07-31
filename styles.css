@@ -522,13 +522,14 @@ button {
 }
 
 .utility-actions button {
-  min-width: 58px;
+  width: 104px;
   min-height: 34px;
   padding: 6px 9px;
   border-radius: 999px;
   color: #6c3a07;
-  font-size: 0.78rem;
+  font-size: 0.68rem;
   font-weight: 950;
+  white-space: nowrap;
   background: linear-gradient(180deg, #fff6a8, #ffc321);
   box-shadow: inset 0 -4px 0 rgba(177, 92, 0, 0.2), 0 7px 12px rgba(75, 88, 32, 0.18);
 }
