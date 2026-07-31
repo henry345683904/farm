@@ -14,6 +14,10 @@ const REDEEM_CODES = {
   gogoshop2026: { type: "sheep", level: 15 },
   henry666: { type: "cheat" }
 };
+const SHOP_VOUCHER_TABLE = "shop_vouchers";
+const SHOP_VOUCHER_SOURCE_KEY = "happy_sheep_farm";
+const SHOP_VOUCHER_CURRENCY = "NZD";
+const SHOP_VOUCHER_STATUSES = ["pending_redeem", "pending_use", "used"];
 const DEFAULT_SETTINGS = {
   music: true,
   sound: true,
@@ -118,6 +122,12 @@ const COPY = {
     voucherCopied: "代金券码已复制",
     voucherCopyFail: "复制失败，请长按手动复制",
     useVoucher: "去 GO GO SHOP 使用",
+    shopVoucherTitle: "开心羊圈代金券",
+    shopVoucherHint: "已同步到后台，状态会显示待兑换、待使用、已使用。",
+    shopVoucherBrand: "开心羊圈",
+    shopVoucherStatusPendingRedeem: "待兑换",
+    shopVoucherStatusPendingUse: "待使用",
+    shopVoucherStatusUsed: "已使用",
     bankWithdrawIntro: "NZ$50 可提现一次，NZ$100 可不限次数提现。请填写银行卡信息，承诺三个工作日到账。",
     bankWithdrawOnce: "仅限一次",
     bankWithdrawUnlimited: "不限次数",
@@ -243,6 +253,12 @@ const COPY = {
     voucherCopied: "Code copied",
     voucherCopyFail: "Copy failed. Hold to copy",
     useVoucher: "Use at GO GO SHOP",
+    shopVoucherTitle: "Happy Sheep Farm vouchers",
+    shopVoucherHint: "Synced to the backend. Status shows to redeem, to use, or used.",
+    shopVoucherBrand: "Happy Sheep Farm",
+    shopVoucherStatusPendingRedeem: "To redeem",
+    shopVoucherStatusPendingUse: "To use",
+    shopVoucherStatusUsed: "Used",
     bankWithdrawIntro: "NZ$50 once. NZ$100 unlimited. Enter bank details. Paid in 3 business days.",
     bankWithdrawOnce: "one-time",
     bankWithdrawUnlimited: "unlimited",
@@ -325,6 +341,34 @@ const LEVEL_NAMES = [
   "新西兰神话羊"
 ];
 
+const SHEEP_ART_FILES = [
+  "01-baseball-cap.svg",
+  "02-slingshot.svg",
+  "03-copper-horn.svg",
+  "04-blue-hat.svg",
+  "05-star-horn.svg",
+  "06-gold-crown.svg",
+  "07-rainbow.svg",
+  "08-legendary.svg",
+  "09-truffle.svg",
+  "10-silver-bell.svg",
+  "11-emerald.svg",
+  "12-obsidian.svg",
+  "13-aurora.svg",
+  "14-diamond.svg",
+  "15-nzd.svg",
+  "16-farm-manager.svg",
+  "17-golden-shears.svg",
+  "18-cloud.svg",
+  "19-galaxy.svg",
+  "20-royal.svg",
+  "21-time.svg",
+  "22-quantum.svg",
+  "23-auckland-king.svg",
+  "24-southern-cross.svg",
+  "25-nz-myth.svg"
+];
+
 const LEVEL_STYLES = [
   { "--fur-hi": "#fff9ef", "--fur-mid": "#f0d7bd", "--fur-low": "#d6a47b", "--face-hi": "#ffb4ad", "--face-low": "#d85e69", "--mark": "rgba(255,255,255,.35)", "--hat": "#f8fbff", "--hat-brim": "#1e6b9a", "--hat-opacity": "1", "--leg": "#33343a", "--ear": "#efa2a5" },
   { "--fur-hi": "#ffe2dc", "--fur-mid": "#ffaaa1", "--fur-low": "#ef7778", "--face-hi": "#ffc6c0", "--face-low": "#de6971", "--mark": "rgba(255,255,255,.38)", "--scarf": "#d93135", "--scarf-opacity": "1", "--tool": "#e2a73b", "--tool-opacity": "1", "--ear": "#ffb3b7" },
@@ -358,6 +402,7 @@ const LEVELS = LEVEL_NAMES.map((name, index) => {
   return {
     level,
     name,
+    art: `assets/sheep/web/${SHEEP_ART_FILES[index]}`,
     coinIncome: level < NZD_START_LEVEL ? Math.max(1, Math.floor(1.9 ** (level - 1))) : 0,
     nzdIncome: level >= NZD_START_LEVEL ? NZD_BASE_INCOME * 3 ** (level - NZD_START_LEVEL) : 0,
     style: LEVEL_STYLES[index]
@@ -393,7 +438,11 @@ const cloud = {
   user: null,
   client: null,
   lastSaveAt: 0,
-  saveTimer: null
+  saveTimer: null,
+  voucherSyncTimer: null,
+  voucherChannel: null,
+  voucherSyncInFlight: false,
+  lastVoucherSyncAt: 0
 };
 
 const dom = {};
@@ -421,6 +470,106 @@ function currentLanguage() {
   return state.settings.language === "en" ? "en" : "zh";
 }
 
+function shopVoucherBrandLabel() {
+  return text("shopVoucherBrand");
+}
+
+function shopVoucherStatusLabel(status) {
+  const key = {
+    pending_redeem: "shopVoucherStatusPendingRedeem",
+    pending_use: "shopVoucherStatusPendingUse",
+    used: "shopVoucherStatusUsed"
+  }[status] || "shopVoucherStatusPendingRedeem";
+  return text(key);
+}
+
+function normalizeShopVoucherStatus(status) {
+  return SHOP_VOUCHER_STATUSES.includes(status) ? status : "pending_redeem";
+}
+
+function parseVoucherTime(value) {
+  const time = Number(value);
+  return Number.isFinite(time) && time > 0 ? time : Date.now();
+}
+
+function parseOptionalVoucherTime(value) {
+  const time = Number(value);
+  return Number.isFinite(time) && time > 0 ? time : null;
+}
+
+function normalizeShopVoucherRecord(record) {
+  const value = Number(record?.value ?? record?.amount ?? 0);
+  const createdAt = parseVoucherTime(record?.createdAt ?? record?.created_at);
+  const updatedAt = parseVoucherTime(record?.updatedAt ?? record?.updated_at ?? createdAt);
+  return {
+    backendId: record?.backendId ?? record?.id ?? null,
+    code: String(record?.code || ""),
+    label: String(record?.label || ""),
+    value,
+    currency: String(record?.currency ?? SHOP_VOUCHER_CURRENCY),
+    sourceKey: String(record?.sourceKey ?? record?.source_key ?? SHOP_VOUCHER_SOURCE_KEY),
+    sourceLabel: String(record?.sourceLabel ?? record?.source_label ?? shopVoucherBrandLabel()),
+    campaign: String(record?.campaign ?? "GO GO SHOP"),
+    status: normalizeShopVoucherStatus(record?.status),
+    createdAt,
+    updatedAt,
+    redeemedAt: parseOptionalVoucherTime(record?.redeemedAt ?? record?.redeemed_at),
+    usedAt: parseOptionalVoucherTime(record?.usedAt ?? record?.used_at),
+    syncState: record?.syncState || (record?.backendId || record?.id ? "synced" : "pending")
+  };
+}
+
+function shopVoucherDisplayLabel(record) {
+  return `${shopVoucherBrandLabel()} · ${record.label || `GO GO SHOP $${record.value}`}`;
+}
+
+function shopVoucherStatusClass(status) {
+  return `status-${normalizeShopVoucherStatus(status)}`;
+}
+
+function serializeShopVoucherRecord(record) {
+  return {
+    code: record.code,
+    label: record.label,
+    value: record.value,
+    currency: record.currency || SHOP_VOUCHER_CURRENCY,
+    sourceKey: record.sourceKey || SHOP_VOUCHER_SOURCE_KEY,
+    sourceLabel: record.sourceLabel || shopVoucherBrandLabel(),
+    campaign: record.campaign || "GO GO SHOP",
+    status: normalizeShopVoucherStatus(record.status),
+    createdAt: record.createdAt || Date.now(),
+    updatedAt: record.updatedAt || Date.now(),
+    redeemedAt: record.redeemedAt || null,
+    usedAt: record.usedAt || null,
+    backendId: record.backendId || null,
+    syncState: record.syncState || "pending"
+  };
+}
+
+function mergeShopVoucherLists(localList, remoteList) {
+  const remoteByCode = new Map(remoteList.map((item) => [item.code, item]));
+  const merged = localList.map((item) => {
+    const remote = remoteByCode.get(item.code);
+    return remote ? { ...item, ...remote, syncState: "synced" } : item;
+  });
+  remoteList.forEach((item) => {
+    if (!merged.some((existing) => existing.code === item.code)) {
+      merged.unshift({ ...item, syncState: "synced" });
+    }
+  });
+  return merged
+    .map(normalizeShopVoucherRecord)
+    .sort((a, b) => b.createdAt - a.createdAt);
+}
+
+function adTitleText() {
+  return currentLanguage() === "en" ? "Ad" : "\u5e7f\u544a";
+}
+
+function adLoadingText() {
+  return currentLanguage() === "en" ? "Loading ad..." : "\u5e7f\u544a\u52a0\u8f7d\u4e2d...";
+}
+
 function boostButtonLabel() {
   return currentLanguage() === "en" ? "Boost" : "\u52a0\u901f";
 }
@@ -441,14 +590,6 @@ function formatRemainingTime(until) {
 
 function timedButtonLabel(label, until) {
   return Date.now() < until ? `${label}(${formatRemainingTime(until)})` : label;
-}
-
-function adTitleText() {
-  return currentLanguage() === "en" ? "Ad" : "\u5e7f\u544a";
-}
-
-function adLoadingText() {
-  return currentLanguage() === "en" ? "Loading ad..." : "\u5e7f\u544a\u52a0\u8f7d\u4e2d...";
 }
 
 function sheepId() {
@@ -586,7 +727,7 @@ function applySavedState(saved, fromCloud = false) {
     infiniteCoins: Boolean(saved.infiniteCoins),
     nzdMultiplier: Math.max(1, Number(saved.nzdMultiplier) || 1),
     settings: { ...DEFAULT_SETTINGS, ...(saved.settings && typeof saved.settings === "object" ? saved.settings : {}) },
-    vouchers: Array.isArray(saved.vouchers) ? saved.vouchers : [],
+    vouchers: Array.isArray(saved.vouchers) ? saved.vouchers.map(normalizeShopVoucherRecord) : [],
     withdrawals: Array.isArray(saved.withdrawals) ? saved.withdrawals : [],
     lastSaved: Number(saved.lastSaved) || Date.now()
   });
@@ -884,6 +1025,7 @@ function autoMergeOnce(silent = false) {
 
 async function autoMerge() {
   if (autoMergeInProgress) return;
+
   autoMergeInProgress = true;
   dom.autoMerge.disabled = true;
   dom.autoMerge.textContent = text("autoMergePlaying");
@@ -1030,13 +1172,130 @@ function toggleLanguage() {
 }
 
 function voucherCode(value) {
-  return `GOGO-${value}-${Math.random().toString(36).slice(2, 8).toUpperCase()}`;
+  return `GOGOSHOP-${value}-${Math.random().toString(36).slice(2, 8).toUpperCase()}`;
 }
 
 function voucherLabel(voucher) {
   return currentLanguage() === "en"
-    ? `GO GO SHOP ${voucher.value}`
+    ? `GO GO SHOP $${voucher.value}`
     : voucher.label;
+}
+
+function shopVoucherRecordPayload(record) {
+  return {
+    user_id: cloud.user.id,
+    code: record.code,
+    label: record.label,
+    value: record.value,
+    currency: record.currency || SHOP_VOUCHER_CURRENCY,
+    source_key: record.sourceKey || SHOP_VOUCHER_SOURCE_KEY,
+    source_label: record.sourceLabel || shopVoucherBrandLabel(),
+    campaign: record.campaign || "GO GO SHOP",
+    status: normalizeShopVoucherStatus(record.status),
+    created_at: new Date(record.createdAt || Date.now()).toISOString(),
+    updated_at: new Date(record.updatedAt || Date.now()).toISOString(),
+    redeemed_at: record.redeemedAt ? new Date(record.redeemedAt).toISOString() : null,
+    used_at: record.usedAt ? new Date(record.usedAt).toISOString() : null
+  };
+}
+
+async function syncShopVoucherRecord(record) {
+  if (!cloud.enabled || !cloud.user || !cloud.client) return null;
+  const payload = shopVoucherRecordPayload(record);
+  const { data, error } = await cloud.client
+    .from(SHOP_VOUCHER_TABLE)
+    .upsert(payload, { onConflict: "code" })
+    .select("*")
+    .single();
+  if (error) {
+    console.error(error);
+    return null;
+  }
+  const normalized = normalizeShopVoucherRecord(data);
+  const index = state.vouchers.findIndex((item) => item.code === normalized.code);
+  if (index !== -1) state.vouchers[index] = { ...state.vouchers[index], ...normalized, syncState: "synced" };
+  return normalized;
+}
+
+async function syncPendingShopVouchers() {
+  if (!cloud.enabled || !cloud.user || !cloud.client) return [];
+  const pending = state.vouchers.filter((item) => item.syncState !== "synced");
+  if (!pending.length) return [];
+  const results = [];
+  for (const record of pending) {
+    const synced = await syncShopVoucherRecord(record);
+    if (synced) results.push(synced);
+  }
+  return results;
+}
+
+async function refreshShopVoucherRecords() {
+  if (!cloud.enabled || !cloud.user || !cloud.client) return [];
+  if (cloud.voucherSyncInFlight) return [];
+  cloud.voucherSyncInFlight = true;
+  try {
+    await syncPendingShopVouchers();
+    const { data, error } = await cloud.client
+      .from(SHOP_VOUCHER_TABLE)
+      .select("*")
+      .eq("user_id", cloud.user.id)
+      .eq("source_key", SHOP_VOUCHER_SOURCE_KEY)
+      .order("created_at", { ascending: false });
+    if (error) throw error;
+    const remote = Array.isArray(data) ? data.map(normalizeShopVoucherRecord) : [];
+    const merged = mergeShopVoucherLists(state.vouchers, remote);
+    const changed = JSON.stringify(merged) !== JSON.stringify(state.vouchers);
+    state.vouchers = merged;
+    if (changed) {
+      render();
+      saveGame();
+    }
+    return merged;
+  } catch (error) {
+    console.error(error);
+    return [];
+  } finally {
+    cloud.voucherSyncInFlight = false;
+    cloud.lastVoucherSyncAt = Date.now();
+  }
+}
+
+function unsubscribeShopVoucherRecords() {
+  if (!cloud.client || !cloud.voucherChannel) return;
+  try {
+    cloud.client.removeChannel(cloud.voucherChannel);
+  } catch (error) {
+    console.error(error);
+  }
+  cloud.voucherChannel = null;
+}
+
+function subscribeShopVoucherRecords() {
+  if (!cloud.enabled || !cloud.user || !cloud.client) return;
+  unsubscribeShopVoucherRecords();
+  try {
+    cloud.voucherChannel = cloud.client
+      .channel(`shop-vouchers-${cloud.user.id}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: SHOP_VOUCHER_TABLE,
+          filter: `user_id=eq.${cloud.user.id}`
+        },
+        () => {
+          refreshShopVoucherRecords().catch((error) => console.error(error));
+        }
+      )
+      .subscribe();
+  } catch (error) {
+    console.error(error);
+  }
+}
+
+function shopVoucherStatusLabelForRecord(record) {
+  return shopVoucherStatusLabel(record.status);
 }
 
 function hasUsedOnceWithdrawal(option) {
@@ -1099,14 +1358,23 @@ function redeemVoucher(voucherId) {
 
   const code = voucherCode(voucher.value);
   state.nzd -= voucher.value;
-  state.vouchers.unshift({
+  const record = normalizeShopVoucherRecord({
     code,
-    label: voucher.label,
+    label: voucherLabel(voucher),
     value: voucher.value,
-    createdAt: Date.now()
+    sourceKey: SHOP_VOUCHER_SOURCE_KEY,
+    sourceLabel: shopVoucherBrandLabel(),
+    campaign: "GO GO SHOP",
+    status: "pending_redeem",
+    createdAt: Date.now(),
+    updatedAt: Date.now(),
+    redeemedAt: 0,
+    usedAt: 0
   });
-  toast(text("voucherSuccess", voucherLabel(voucher)));
+  state.vouchers.unshift(record);
+  toast(text("voucherSuccess", shopVoucherDisplayLabel(record)));
   feedback("reward");
+  syncShopVoucherRecord(record).catch((error) => console.error(error));
   openModal("withdraw");
   render();
   saveGame();
@@ -1224,22 +1492,10 @@ function applySheepStyle(element, level) {
 }
 
 function sheepMarkup(sheep) {
+  const data = levelData(sheep.level);
   return `
     <span class="sheep-shadow"></span>
-    <span class="sheep-core"></span>
-    <span class="sheep-ear left"></span>
-    <span class="sheep-ear right"></span>
-    <span class="sheep-face"></span>
-    <span class="sheep-nose"></span>
-    <span class="sheep-mouth"></span>
-    <span class="sheep-hat"></span>
-    <span class="sheep-horn left"></span>
-    <span class="sheep-horn right"></span>
-    <span class="sheep-crown"></span>
-    <span class="sheep-scarf"></span>
-    <span class="sheep-tool"></span>
-    <span class="sheep-leg one"></span>
-    <span class="sheep-leg two"></span>
+    <img class="sheep-art" src="${data.art}" alt="" draggable="false" decoding="async">
     <span class="sheep-level">${sheep.level}</span>
   `;
 }
@@ -1591,16 +1847,30 @@ function openModal(type) {
         <div class="voucher-list">
           ${VOUCHERS.map((voucher) => `
             <button type="button" data-voucher="${voucher.id}" ${state.nzd < voucher.value ? "disabled" : ""}>
-              ${voucherLabel(voucher)}
+              ${shopVoucherDisplayLabel(normalizeShopVoucherRecord({
+                label: voucherLabel(voucher),
+                value: voucher.value,
+                sourceKey: SHOP_VOUCHER_SOURCE_KEY,
+                sourceLabel: shopVoucherBrandLabel(),
+                status: "pending_redeem"
+              }))}
               <span>${text("voucherNeed", voucher.value)}</span>
             </button>
           `).join("")}
         </div>
         <div class="voucher-history">
+          <div class="voucher-history-head">
+            <strong>${text("shopVoucherTitle")}</strong>
+            <small>${text("shopVoucherHint")}</small>
+          </div>
           ${state.vouchers.length
             ? state.vouchers.slice(0, 5).map((voucher) => `
-              <div class="voucher-code">
-                <span>${voucher.label}</span>
+              <div class="voucher-code voucher-code--farm ${shopVoucherStatusClass(voucher.status)}">
+                <div class="voucher-code-meta">
+                  <span class="voucher-source">${voucher.sourceLabel || shopVoucherBrandLabel()}</span>
+                  <span class="voucher-status">${shopVoucherStatusLabelForRecord(voucher)}</span>
+                </div>
+                <strong>${shopVoucherDisplayLabel(voucher)}</strong>
                 <button type="button" data-copy-voucher="${voucher.code}">${voucher.code}</button>
               </div>
             `).join("")
@@ -1701,19 +1971,34 @@ async function setupCloudSave() {
     });
     cloud.enabled = true;
     cloud.ready = true;
+    if (!cloud.voucherSyncTimer) {
+      cloud.voucherSyncTimer = setInterval(() => {
+        refreshShopVoucherRecords().catch((error) => console.error(error));
+      }, 20000);
+    }
     await loadAuthProviderSettings();
 
     const { data } = await cloud.client.auth.getSession();
     cloud.user = data.session?.user || null;
     updateAuthStatus(authStatusText());
     renderHud();
-    if (cloud.user) await loadCloudGame();
+    if (cloud.user) {
+      await loadCloudGame();
+      await refreshShopVoucherRecords();
+      subscribeShopVoucherRecords();
+    }
 
     cloud.client.auth.onAuthStateChange(async (event, session) => {
+      if (event === "INITIAL_SESSION") return;
+      unsubscribeShopVoucherRecords();
       cloud.user = session?.user || null;
       updateAuthStatus(authStatusText());
       renderHud();
-      if (cloud.user && event !== "INITIAL_SESSION") await loadCloudGame();
+      if (cloud.user && event !== "INITIAL_SESSION") {
+        await loadCloudGame();
+        await refreshShopVoucherRecords();
+        subscribeShopVoucherRecords();
+      }
     });
   } catch (error) {
     cloud.ready = true;

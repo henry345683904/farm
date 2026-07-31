@@ -27,6 +27,17 @@
 - 任务、图鉴、兑换码、登录存档通过按钮弹窗打开
 - 未配置 Supabase 时，游戏会使用浏览器 localStorage 本地存档
 
+## 羊角色素材
+
+- 25 只羊使用独立的 `1024 x 1024` 透明 SVG，位于 `assets/sheep/web/`
+- 文件名按等级编号，`manifest.json` 保存等级、中文名称和资源路径的对应关系
+- SVG 可直接用于网页，也可以无损放大后导出 PNG
+- 修改 `tools/generate-sheep-art.mjs` 后，可运行下面的命令重新生成整套素材：
+
+```bash
+node tools/generate-sheep-art.mjs
+```
+
 ## Supabase 云存档
 
 项目已经改为使用 Supabase Auth 和 Supabase Database。要启用 Google 登录、邮箱登录和永久云存档：
@@ -34,7 +45,7 @@
 1. 在 Supabase 创建项目。
 2. 在 Authentication 里启用 Email 登录；如需 Google 登录，在 Providers 里启用 Google。
 3. 在 Authentication 的 URL Configuration 里，把 `https://henry345683904.github.io/farm/` 加入 Site URL 或 Redirect URLs。
-4. 在 SQL Editor 执行下面的建表和 RLS 规则。
+4. 在 SQL Editor 先执行存档表 SQL，再执行代金券表 SQL。仓库里的 `supabase-shop-vouchers.sql` 已经包含完整建表、RLS 和状态更新时间触发器。代金券表会把本游戏生成的券统一标记为 `happy_sheep_farm` / `开心羊圈`，后台可以按这个字段单独筛选。
 5. 把 Supabase Project URL 和 anon public key 填入 `supabase-config.js`。
 
 ```sql
@@ -63,6 +74,53 @@ with check (auth.uid() = user_id);
 drop policy if exists "Users can update own farm save" on public.farm_saves;
 create policy "Users can update own farm save"
 on public.farm_saves
+for update
+to authenticated
+using (auth.uid() = user_id)
+with check (auth.uid() = user_id);
+```
+
+```sql
+create extension if not exists pgcrypto;
+
+create table if not exists public.shop_vouchers (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users(id) on delete cascade,
+  code text not null unique,
+  label text not null,
+  value numeric not null check (value >= 0),
+  currency text not null default 'NZD',
+  source_key text not null default 'happy_sheep_farm',
+  source_label text not null default '开心羊圈',
+  campaign text not null default 'GO GO SHOP',
+  status text not null default 'pending_redeem' check (status in ('pending_redeem', 'pending_use', 'used')),
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  redeemed_at timestamptz,
+  used_at timestamptz
+);
+
+alter table public.shop_vouchers enable row level security;
+create index if not exists shop_vouchers_user_source_status_idx
+on public.shop_vouchers (user_id, source_key, status, created_at desc);
+
+drop policy if exists "Users can read own shop vouchers" on public.shop_vouchers;
+create policy "Users can read own shop vouchers"
+on public.shop_vouchers
+for select
+to authenticated
+using (auth.uid() = user_id);
+
+drop policy if exists "Users can insert own shop vouchers" on public.shop_vouchers;
+create policy "Users can insert own shop vouchers"
+on public.shop_vouchers
+for insert
+to authenticated
+with check (auth.uid() = user_id);
+
+drop policy if exists "Users can update own shop vouchers" on public.shop_vouchers;
+create policy "Users can update own shop vouchers"
+on public.shop_vouchers
 for update
 to authenticated
 using (auth.uid() = user_id)
