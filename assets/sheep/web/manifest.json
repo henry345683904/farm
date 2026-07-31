@@ -1,0 +1,127 @@
+[
+  {
+    "level": 1,
+    "name": "棒球帽羊",
+    "file": "assets/sheep/web/01-baseball-cap.svg"
+  },
+  {
+    "level": 2,
+    "name": "弹弓羊",
+    "file": "assets/sheep/web/02-slingshot.svg"
+  },
+  {
+    "level": 3,
+    "name": "铜角羊",
+    "file": "assets/sheep/web/03-copper-horn.svg"
+  },
+  {
+    "level": 4,
+    "name": "蓝帽羊",
+    "file": "assets/sheep/web/04-blue-hat.svg"
+  },
+  {
+    "level": 5,
+    "name": "星角羊",
+    "file": "assets/sheep/web/05-star-horn.svg"
+  },
+  {
+    "level": 6,
+    "name": "金冠羊",
+    "file": "assets/sheep/web/06-gold-crown.svg"
+  },
+  {
+    "level": 7,
+    "name": "彩虹羊",
+    "file": "assets/sheep/web/07-rainbow.svg"
+  },
+  {
+    "level": 8,
+    "name": "传说羊",
+    "file": "assets/sheep/web/08-legendary.svg"
+  },
+  {
+    "level": 9,
+    "name": "松露羊",
+    "file": "assets/sheep/web/09-truffle.svg"
+  },
+  {
+    "level": 10,
+    "name": "银铃羊",
+    "file": "assets/sheep/web/10-silver-bell.svg"
+  },
+  {
+    "level": 11,
+    "name": "翡翠羊",
+    "file": "assets/sheep/web/11-emerald.svg"
+  },
+  {
+    "level": 12,
+    "name": "黑曜羊",
+    "file": "assets/sheep/web/12-obsidian.svg"
+  },
+  {
+    "level": 13,
+    "name": "极光羊",
+    "file": "assets/sheep/web/13-aurora.svg"
+  },
+  {
+    "level": 14,
+    "name": "钻石羊",
+    "file": "assets/sheep/web/14-diamond.svg"
+  },
+  {
+    "level": 15,
+    "name": "纽币羊",
+    "file": "assets/sheep/web/15-nzd.svg"
+  },
+  {
+    "level": 16,
+    "name": "牧场经理羊",
+    "file": "assets/sheep/web/16-farm-manager.svg"
+  },
+  {
+    "level": 17,
+    "name": "黄金剪羊",
+    "file": "assets/sheep/web/17-golden-shears.svg"
+  },
+  {
+    "level": 18,
+    "name": "云端羊",
+    "file": "assets/sheep/web/18-cloud.svg"
+  },
+  {
+    "level": 19,
+    "name": "银河羊",
+    "file": "assets/sheep/web/19-galaxy.svg"
+  },
+  {
+    "level": 20,
+    "name": "皇家羊",
+    "file": "assets/sheep/web/20-royal.svg"
+  },
+  {
+    "level": 21,
+    "name": "时光羊",
+    "file": "assets/sheep/web/21-time.svg"
+  },
+  {
+    "level": 22,
+    "name": "量子羊",
+    "file": "assets/sheep/web/22-quantum.svg"
+  },
+  {
+    "level": 23,
+    "name": "奥克兰羊王",
+    "file": "assets/sheep/web/23-auckland-king.svg"
+  },
+  {
+    "level": 24,
+    "name": "南十字星羊",
+    "file": "assets/sheep/web/24-southern-cross.svg"
+  },
+  {
+    "level": 25,
+    "name": "新西兰神话羊",
+    "file": "assets/sheep/web/25-nz-myth.svg"
+  }
+]
