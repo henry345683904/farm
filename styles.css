@@ -608,6 +608,7 @@ button {
   -webkit-user-select: none;
   user-select: none;
   transition: filter 0.14s ease;
+  will-change: left, top, margin-top;
 }
 
 .sheep-token.walking {
@@ -646,6 +647,8 @@ button {
   user-select: none;
   filter: drop-shadow(0 7px 4px rgba(51, 43, 31, 0.16));
   transform-origin: 50% 72%;
+  will-change: transform;
+  transition: transform 0.24s ease-out;
 }
 
 .mood-curious .sheep-art {
@@ -654,6 +657,18 @@ button {
 
 .mood-sleepy .sheep-art {
   transform: translateY(2px) scaleY(0.99);
+}
+
+.sheep-token.facing-left .sheep-art {
+  transform: scaleX(-1);
+}
+
+.sheep-token.facing-left.mood-curious .sheep-art {
+  transform: scaleX(-1) rotate(2deg) translateY(-1px);
+}
+
+.sheep-token.facing-left.mood-sleepy .sheep-art {
+  transform: scaleX(-1) translateY(2px) scaleY(0.99);
 }
 
 .sheep-core {

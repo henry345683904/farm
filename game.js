@@ -1578,7 +1578,8 @@ function sheepMarkup(sheep) {
 
 function sheepButton(sheep, index) {
   const button = document.createElement("button");
-  button.className = `sheep-token walking variant-${sheep.level} mood-${sheep.mood || "happy"}`;
+  const facingClass = sheep.tx < sheep.x ? " facing-left" : "";
+  button.className = `sheep-token walking variant-${sheep.level} mood-${sheep.mood || "happy"}${facingClass}`;
   button.type = "button";
   button.style.left = `${sheep.x}%`;
   button.style.top = `${sheep.y}%`;
@@ -1660,6 +1661,7 @@ function updateSheepPositions() {
     if (!node || node.classList.contains("dragging")) return;
     node.style.left = `${sheep.x}%`;
     node.style.top = `${sheep.y}%`;
+    node.classList.toggle("facing-left", sheep.tx < sheep.x);
     MOODS.forEach((mood) => node.classList.toggle(`mood-${mood}`, sheep.mood === mood));
   });
 }
