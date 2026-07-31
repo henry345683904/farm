@@ -1150,6 +1150,47 @@ button {
   margin-top: 10px;
 }
 
+.modal-backdrop[data-modal-type="ad"] .modal {
+  width: 92%;
+  max-height: 88%;
+  padding: 18px 12px 16px;
+}
+
+.modal-backdrop[data-modal-type="ad"] .modal::before {
+  width: 76%;
+  height: 78px;
+}
+
+.modal-backdrop[data-modal-type="ad"] .modal-close {
+  display: none;
+}
+
+.modal-backdrop[data-modal-type="ad"] .modal-body {
+  max-height: 68vh;
+  margin-top: 8px;
+  overflow: hidden;
+}
+
+.ad-card {
+  display: grid;
+  gap: 8px;
+  width: 100%;
+  padding: 10px;
+  border-radius: 8px;
+  color: #63340b;
+  background: rgba(255, 238, 129, 0.94);
+  text-shadow: none;
+  font-size: 0.82rem;
+}
+
+.rewarded-ad-video {
+  width: 100%;
+  max-height: 54vh;
+  border-radius: 8px;
+  background: #111;
+  object-fit: contain;
+}
+
 .modal-body > .sheep-token {
   position: relative;
   left: auto;

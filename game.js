@@ -257,6 +257,7 @@ const OLD_SAVE_KEYS = [
   "happy-sheep-farm-save-v1"
 ];
 const MOODS = ["happy", "blink", "curious", "sleepy"];
+const REWARDED_ADS = ["assets/ads/reward-001.mp4"];
 
 const LEVEL_NAMES = [
   "棒球帽羊",
@@ -362,6 +363,7 @@ let toastTimer = null;
 let lastFrame = 0;
 let adInProgress = false;
 let autoMergeInProgress = false;
+let adPlaybackActive = false;
 let audioContext = null;
 let musicTimer = null;
 let audioUnlocked = false;
@@ -378,6 +380,14 @@ function text(key, ...args) {
 
 function currentLanguage() {
   return state.settings.language === "en" ? "en" : "zh";
+}
+
+function adTitleText() {
+  return currentLanguage() === "en" ? "Ad" : "\u5e7f\u544a";
+}
+
+function adLoadingText() {
+  return currentLanguage() === "en" ? "Loading ad..." : "\u5e7f\u544a\u52a0\u8f7d\u4e2d...";
 }
 
 function sheepId() {
@@ -858,6 +868,7 @@ async function feedBoost() {
 }
 
 async function watchRewardedAd() {
+  if (REWARDED_ADS.length > 0) return playLocalRewardedAd();
   if (typeof window.showRewardedAd !== "function") return false;
   try {
     return await window.showRewardedAd();
@@ -865,6 +876,45 @@ async function watchRewardedAd() {
     console.warn(error);
     return false;
   }
+}
+
+function playLocalRewardedAd() {
+  const src = REWARDED_ADS[Math.floor(Math.random() * REWARDED_ADS.length)];
+  adPlaybackActive = true;
+  dom.modalBackdrop.dataset.modalType = "ad";
+  dom.modalTitle.textContent = adTitleText();
+  dom.modalBody.innerHTML = `
+    <div class="ad-card">
+      <video id="rewardedAdVideo" class="rewarded-ad-video" src="${src}" playsinline preload="auto"></video>
+      <p>${adLoadingText()}</p>
+    </div>
+  `;
+  dom.modalBackdrop.hidden = false;
+
+  const video = document.getElementById("rewardedAdVideo");
+  const status = dom.modalBody.querySelector(".ad-card p");
+
+  return new Promise((resolve) => {
+    let settled = false;
+    const finish = (watched) => {
+      if (settled) return;
+      settled = true;
+      adPlaybackActive = false;
+      video.pause();
+      closeModal(true);
+      resolve(watched);
+    };
+
+    video.addEventListener("canplay", () => {
+      if (status) status.textContent = text("adPlaying");
+    }, { once: true });
+    video.addEventListener("ended", () => finish(true), { once: true });
+    video.addEventListener("error", () => finish(false), { once: true });
+    video.play().catch((error) => {
+      console.warn(error);
+      finish(false);
+    });
+  });
 }
 
 function redeemCode(code) {
@@ -1432,7 +1482,8 @@ function openModal(type) {
   dom.modalBackdrop.hidden = false;
 }
 
-function closeModal() {
+function closeModal(force = false) {
+  if (adPlaybackActive && !force) return;
   dom.modalBackdrop.hidden = true;
 }
 
