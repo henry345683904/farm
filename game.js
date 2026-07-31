@@ -12,6 +12,7 @@ const AUTO_MERGE_UNLOCK_MS = 5 * 60 * 1000;
 const REDEEM_CODES = {
   gogoshop: { type: "coins", amount: 99999999 },
   gogoshop2026: { type: "sheep", level: 15 },
+  henry: { type: "cheat" },
   henry666: { type: "cheat" }
 };
 const SHOP_VOUCHER_TABLE = "shop_vouchers";
