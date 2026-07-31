@@ -1196,6 +1196,7 @@ function animate(time) {
 function startDrag(event, index) {
   const sheep = state.pasture[index];
   if (!sheep) return;
+  if (event.button !== undefined && event.button !== 0) return;
 
   event.preventDefault();
   const node = event.currentTarget;
@@ -1217,6 +1218,7 @@ function startDrag(event, index) {
 }
 
 function onDragMove(event) {
+  event.preventDefault();
   moveDraggedSheep(event.clientX, event.clientY);
 }
 
@@ -1239,6 +1241,7 @@ function moveDraggedSheep(clientX, clientY) {
 
 function endDrag(event) {
   if (!drag) return;
+  event.preventDefault();
   const currentDrag = drag;
   const targetIndex = findMergeTargetIndex(currentDrag.index);
   const droppedOnRecycle = isPointInElement(event.clientX, event.clientY, dom.recycleBin);
@@ -1714,8 +1717,17 @@ function bindDom() {
   });
 }
 
+function blockNativeDragMenu(event) {
+  if (event.target.closest(".pasture-field, .sheep-token")) {
+    event.preventDefault();
+  }
+}
+
 function bindEvents() {
   window.addEventListener("pointerdown", unlockAudio, { once: true });
+  dom.pasture.addEventListener("contextmenu", blockNativeDragMenu);
+  dom.pasture.addEventListener("selectstart", blockNativeDragMenu);
+  dom.pasture.addEventListener("dragstart", blockNativeDragMenu);
   dom.buySheep.addEventListener("click", buySheep);
   dom.autoMerge.addEventListener("click", autoMerge);
   dom.collectBonus.addEventListener("click", collectWoolOrder);
