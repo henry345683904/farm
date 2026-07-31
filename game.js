@@ -118,6 +118,21 @@ const COPY = {
     voucherCopied: "代金券码已复制",
     voucherCopyFail: "复制失败，请长按手动复制",
     useVoucher: "去 GO GO SHOP 使用",
+    bankWithdrawIntro: "NZ$50 可提现一次，NZ$100 可不限次数提现。请填写银行卡信息，承诺三个工作日到账。",
+    bankWithdrawOnce: "仅限一次",
+    bankWithdrawUnlimited: "不限次数",
+    bankWithdrawUsed: "已使用",
+    bankWithdrawNeed: (value) => `需要 NZ$${value}`,
+    bankAccountName: "姓名",
+    bankAccountNumber: "银行卡号",
+    bankBankName: "银行名称",
+    bankPhone: "联系电话",
+    bankSubmit: (value) => `申请提现 NZ$${value}`,
+    bankMissing: "请填写完整银行卡信息。",
+    bankWithdrawSuccess: (value) => `提现申请已提交：NZ$${value}，三个工作日到账`,
+    bankWithdrawHistoryTitle: "银行卡提现记录",
+    bankWithdrawEmpty: "提交后会在这里显示提现记录。",
+    bankWithdrawRecord: (value, name, date) => `NZ$${value} · ${name} · ${date}`,
     levelUpTitle: "恭喜升级啦",
     levelUpBody: (earn, required) => `产出 ${earn}，下次升级需要 ${required} 只同级羊`,
     cloudLoaded: "云存档已加载",
@@ -228,6 +243,21 @@ const COPY = {
     voucherCopied: "Voucher code copied",
     voucherCopyFail: "Copy failed. Long press to copy manually",
     useVoucher: "Use at GO GO SHOP",
+    bankWithdrawIntro: "NZ$50 can be withdrawn once. NZ$100 withdrawals are unlimited. Enter bank details; payment is promised within 3 business days.",
+    bankWithdrawOnce: "once only",
+    bankWithdrawUnlimited: "unlimited",
+    bankWithdrawUsed: "used",
+    bankWithdrawNeed: (value) => `Needs NZ$${value}`,
+    bankAccountName: "Name",
+    bankAccountNumber: "Bank account",
+    bankBankName: "Bank name",
+    bankPhone: "Phone",
+    bankSubmit: (value) => `Withdraw NZ$${value}`,
+    bankMissing: "Enter all bank details.",
+    bankWithdrawSuccess: (value) => `Withdrawal submitted: NZ$${value}. Paid within 3 business days`,
+    bankWithdrawHistoryTitle: "Bank withdrawal history",
+    bankWithdrawEmpty: "Withdrawal records will appear here after submitting.",
+    bankWithdrawRecord: (value, name, date) => `NZ$${value} · ${name} · ${date}`,
     levelUpTitle: "Level Up",
     levelUpBody: (earn, required) => `Earns ${earn}. Next merge needs ${required} matching sheep.`,
     cloudLoaded: "Cloud save loaded",
@@ -248,6 +278,10 @@ const VOUCHERS = [
   { id: "gogo-1", label: "GO GO SHOP $1 代金券", value: 1 },
   { id: "gogo-5", label: "GO GO SHOP $5 代金券", value: 5 },
   { id: "gogo-10", label: "GO GO SHOP $10 代金券", value: 10 }
+];
+const BANK_WITHDRAW_OPTIONS = [
+  { id: "bank-50", value: 50, once: true },
+  { id: "bank-100", value: 100, once: false }
 ];
 const SAVE_KEY = "happy-sheep-farm-save-v5";
 const SUPABASE_SAVE_TABLE = "farm_saves";
@@ -348,6 +382,7 @@ const state = {
   nzdMultiplier: 1,
   settings: { ...DEFAULT_SETTINGS },
   vouchers: [],
+  withdrawals: [],
   lastSaved: Date.now()
 };
 
@@ -523,6 +558,7 @@ function serializableState() {
     nzdMultiplier: state.nzdMultiplier,
     settings: state.settings,
     vouchers: state.vouchers,
+    withdrawals: state.withdrawals,
     lastSaved: Date.now(),
     version: 5
   };
@@ -551,6 +587,7 @@ function applySavedState(saved, fromCloud = false) {
     nzdMultiplier: Math.max(1, Number(saved.nzdMultiplier) || 1),
     settings: { ...DEFAULT_SETTINGS, ...(saved.settings && typeof saved.settings === "object" ? saved.settings : {}) },
     vouchers: Array.isArray(saved.vouchers) ? saved.vouchers : [],
+    withdrawals: Array.isArray(saved.withdrawals) ? saved.withdrawals : [],
     lastSaved: Number(saved.lastSaved) || Date.now()
   });
 
@@ -1002,6 +1039,26 @@ function voucherLabel(voucher) {
     : voucher.label;
 }
 
+function hasUsedOnceWithdrawal(option) {
+  return Boolean(option.once && state.withdrawals.some((item) => item.optionId === option.id));
+}
+
+function bankWithdrawNote(option) {
+  if (hasUsedOnceWithdrawal(option)) return text("bankWithdrawUsed");
+  return option.once ? text("bankWithdrawOnce") : text("bankWithdrawUnlimited");
+}
+
+function bankWithdrawDisabled(option) {
+  return state.nzd < option.value || hasUsedOnceWithdrawal(option);
+}
+
+function withdrawalDate(timestamp) {
+  return new Date(timestamp).toLocaleDateString(currentLanguage() === "en" ? "en-NZ" : "zh-CN", {
+    month: "2-digit",
+    day: "2-digit"
+  });
+}
+
 async function copyText(value) {
   if (navigator.clipboard && window.isSecureContext) {
     await navigator.clipboard.writeText(value);
@@ -1055,6 +1112,44 @@ function redeemVoucher(voucherId) {
   saveGame();
 }
 
+function submitBankWithdrawal(optionId) {
+  const option = BANK_WITHDRAW_OPTIONS.find((item) => item.id === optionId);
+  if (!option) return;
+  if (bankWithdrawDisabled(option)) {
+    toast(hasUsedOnceWithdrawal(option) ? text("bankWithdrawUsed") : text("nzdNotEnough"));
+    feedback("error");
+    return;
+  }
+
+  const accountName = document.getElementById("bankAccountName")?.value.trim();
+  const accountNumber = document.getElementById("bankAccountNumber")?.value.trim();
+  const bankName = document.getElementById("bankBankName")?.value.trim();
+  const phone = document.getElementById("bankPhone")?.value.trim();
+  if (!accountName || !accountNumber || !bankName || !phone) {
+    toast(text("bankMissing"));
+    feedback("error");
+    return;
+  }
+
+  state.nzd -= option.value;
+  state.withdrawals.unshift({
+    id: `WD-${Date.now()}-${Math.random().toString(36).slice(2, 6).toUpperCase()}`,
+    optionId: option.id,
+    value: option.value,
+    accountName,
+    accountNumber,
+    bankName,
+    phone,
+    status: "pending",
+    createdAt: Date.now()
+  });
+  toast(text("bankWithdrawSuccess", option.value));
+  feedback("reward");
+  openModal("withdraw");
+  render();
+  saveGame();
+}
+
 function freshGameState(settings = state.settings) {
   return {
     coins: 100,
@@ -1074,6 +1169,7 @@ function freshGameState(settings = state.settings) {
     nzdMultiplier: 1,
     settings: { ...DEFAULT_SETTINGS, ...settings },
     vouchers: [],
+    withdrawals: [],
     lastSaved: Date.now()
   };
 }
@@ -1467,6 +1563,31 @@ function openModal(type) {
     dom.modalBody.innerHTML = `
       <div class="withdraw-card">
         <strong>${text("balance", formatNZD(state.nzd))}</strong>
+        <form id="bankWithdrawForm" class="bank-withdraw-form">
+          <p>${text("bankWithdrawIntro")}</p>
+          <div class="bank-fields">
+            <input id="bankAccountName" type="text" placeholder="${text("bankAccountName")}" autocomplete="name" />
+            <input id="bankAccountNumber" type="text" placeholder="${text("bankAccountNumber")}" inputmode="numeric" autocomplete="off" />
+            <input id="bankBankName" type="text" placeholder="${text("bankBankName")}" autocomplete="organization" />
+            <input id="bankPhone" type="tel" placeholder="${text("bankPhone")}" autocomplete="tel" />
+          </div>
+          <div class="bank-withdraw-options">
+            ${BANK_WITHDRAW_OPTIONS.map((option) => `
+              <button type="submit" data-bank-withdraw="${option.id}" ${bankWithdrawDisabled(option) ? "disabled" : ""}>
+                <strong>${text("bankSubmit", option.value)}</strong>
+                <span>${bankWithdrawNote(option)} · ${text("bankWithdrawNeed", option.value)}</span>
+              </button>
+            `).join("")}
+          </div>
+        </form>
+        <div class="bank-withdraw-history">
+          <strong>${text("bankWithdrawHistoryTitle")}</strong>
+          ${state.withdrawals.length
+            ? state.withdrawals.slice(0, 4).map((item) => `
+              <span>${text("bankWithdrawRecord", item.value, item.accountName || "-", withdrawalDate(item.createdAt || Date.now()))}</span>
+            `).join("")
+            : `<p>${text("bankWithdrawEmpty")}</p>`}
+        </div>
         <div class="voucher-list">
           ${VOUCHERS.map((voucher) => `
             <button type="button" data-voucher="${voucher.id}" ${state.nzd < voucher.value ? "disabled" : ""}>
@@ -1835,6 +1956,11 @@ function bindEvents() {
     updateSetting(setting, value);
   });
   dom.modalBody.addEventListener("submit", (event) => {
+    if (event.target.id === "bankWithdrawForm") {
+      event.preventDefault();
+      submitBankWithdrawal(event.submitter?.dataset.bankWithdraw);
+      return;
+    }
     if (event.target.id === "redeemForm") {
       event.preventDefault();
       redeemCode(document.getElementById("redeemInput")?.value || "");

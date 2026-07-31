@@ -1370,6 +1370,69 @@ button {
   box-shadow: inset 0 -4px 0 rgba(83, 16, 15, 0.22);
 }
 
+.bank-withdraw-form,
+.bank-fields,
+.bank-withdraw-options,
+.bank-withdraw-history {
+  display: grid;
+  gap: 7px;
+}
+
+.bank-withdraw-form p,
+.bank-withdraw-history p {
+  margin: 0;
+  font-size: 0.72rem;
+  font-weight: 900;
+  line-height: 1.25;
+}
+
+.bank-fields {
+  grid-template-columns: 1fr 1fr;
+}
+
+.bank-fields input {
+  min-width: 0;
+  min-height: 34px;
+  padding: 0 8px;
+  border: 0;
+  border-radius: 8px;
+  color: #60330a;
+  font-weight: 900;
+  background: rgba(255, 255, 255, 0.78);
+}
+
+.bank-withdraw-options {
+  grid-template-columns: 1fr 1fr;
+}
+
+.bank-withdraw-options button {
+  display: grid;
+  gap: 2px;
+  min-height: 44px;
+  padding: 6px;
+  border-radius: 10px;
+  color: #fff8d2;
+  font-weight: 950;
+  background: linear-gradient(180deg, #48aa73, #1d744e);
+  box-shadow: inset 0 -4px 0 rgba(5, 50, 26, 0.24);
+}
+
+.bank-withdraw-options button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.bank-withdraw-options span,
+.bank-withdraw-history span {
+  font-size: 0.66rem;
+}
+
+.bank-withdraw-history {
+  padding: 8px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.42);
+}
+
 .voucher-list {
   display: grid;
   gap: 7px;
