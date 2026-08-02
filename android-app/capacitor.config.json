@@ -1,0 +1,20 @@
+{
+  "appId": "nz.gogoshop.happysheep",
+  "appName": "开心羊圈",
+  "webDir": "www",
+  "server": {
+    "url": "https://henry345683904.github.io/farm/?app=1",
+    "cleartext": false,
+    "allowNavigation": [
+      "henry345683904.github.io",
+      "gogoshop.nz",
+      "www.gogoshop.nz",
+      "*.supabase.co",
+      "accounts.google.com"
+    ]
+  },
+  "android": {
+    "allowMixedContent": false,
+    "backgroundColor": "#69ccef"
+  }
+}
