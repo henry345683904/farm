@@ -2355,8 +2355,35 @@ function blockNativeDragMenu(event) {
   }
 }
 
+let lastBackgroundTap = null;
+
+function blockLegacyDoubleTapZoom(event) {
+  if (event.changedTouches?.length !== 1) return;
+  if (event.target.closest("button, a, input, textarea, select, video, audio, .sheep-token")) {
+    lastBackgroundTap = null;
+    return;
+  }
+
+  const touch = event.changedTouches[0];
+  const currentTap = { time: Date.now(), x: touch.clientX, y: touch.clientY };
+  if (lastBackgroundTap) {
+    const elapsed = currentTap.time - lastBackgroundTap.time;
+    const distance = Math.hypot(currentTap.x - lastBackgroundTap.x, currentTap.y - lastBackgroundTap.y);
+    if (elapsed < 350 && distance < 32) event.preventDefault();
+  }
+  lastBackgroundTap = currentTap;
+}
+
+function blockGestureZoom(event) {
+  event.preventDefault();
+}
+
 function bindEvents() {
   window.addEventListener("pointerdown", unlockAudio, { once: true });
+  document.addEventListener("dblclick", blockGestureZoom, { passive: false });
+  document.addEventListener("gesturestart", blockGestureZoom, { passive: false });
+  document.addEventListener("gesturechange", blockGestureZoom, { passive: false });
+  document.addEventListener("touchend", blockLegacyDoubleTapZoom, { passive: false });
   dom.pasture.addEventListener("contextmenu", blockNativeDragMenu);
   dom.pasture.addEventListener("selectstart", blockNativeDragMenu);
   dom.pasture.addEventListener("dragstart", blockNativeDragMenu);

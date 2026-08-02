@@ -18,6 +18,8 @@ body {
   height: 100%;
   overflow: hidden;
   overscroll-behavior: none;
+  touch-action: manipulation;
+  -webkit-text-size-adjust: 100%;
 }
 
 body {
@@ -42,7 +44,11 @@ button {
   position: relative;
   width: min(100vw, calc(100vh * 0.5625));
   height: min(100vh, calc(100vw * 1.7778));
+  width: min(100vw, calc(100dvh * 0.5625));
+  height: min(100dvh, calc(100vw * 1.7778));
+  aspect-ratio: 9 / 16;
   overflow: hidden;
+  touch-action: manipulation;
   -webkit-touch-callout: none;
   -webkit-user-select: none;
   user-select: none;
@@ -51,10 +57,19 @@ button {
 }
 
 .phone-stage input,
-.phone-stage textarea {
+.phone-stage textarea,
+.phone-stage select {
+  font-size: max(1rem, 16px);
+  touch-action: manipulation;
   -webkit-touch-callout: default;
   -webkit-user-select: text;
   user-select: text;
+}
+
+.phone-stage button,
+.phone-stage a,
+.modal-backdrop {
+  touch-action: manipulation;
 }
 
 .scene-bg,
@@ -1715,12 +1730,5 @@ button {
 
   50% {
     transform: scale(1.12);
-  }
-}
-
-@media (max-aspect-ratio: 9 / 16) {
-  .phone-stage {
-    width: 100vw;
-    height: 100dvh;
   }
 }
