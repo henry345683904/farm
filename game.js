@@ -57,7 +57,7 @@ const COPY = {
     woolOrder: "羊毛订单",
     shop: "商店",
     quickBuy: "快速购买",
-    pastureHint: "牧场里的羊会自动产出。高等级升级需要更多同级羊，Lv.15 开始产 NZD。",
+    pastureHint: "牧场里的羊会自动产出金币，Lv.15 开始同时产出金币和 NZD。",
     buyCost: (cost, level) => `${cost} 金币 · Lv.${level}`,
     full: "牧场满了，先合成升级。",
     noCoins: (cost) => `金币不够，需要 ${cost}。`,
@@ -189,7 +189,7 @@ const COPY = {
     woolOrder: "Order",
     shop: "Shop",
     quickBuy: "Quick buy",
-    pastureHint: "Sheep earn in the pasture. Higher levels need matching sheep. Lv.15 starts NZD.",
+    pastureHint: "Sheep earn coins in the pasture. Lv.15+ sheep earn both coins and NZD.",
     buyCost: (cost, level) => `${cost} coins · Lv.${level}`,
     full: "Pasture is full. Merge some sheep first.",
     noCoins: (cost) => `Need ${cost} coins.`,
@@ -409,7 +409,7 @@ const LEVELS = LEVEL_NAMES.map((name, index) => {
     level,
     name,
     art: `assets/sheep/web/${SHEEP_ART_FILES[index]}`,
-    coinIncome: level < NZD_START_LEVEL ? Math.max(1, Math.floor(1.9 ** (level - 1))) : 0,
+    coinIncome: Math.max(1, Math.floor(1.9 ** (level - 1))),
     nzdIncome: level >= NZD_START_LEVEL ? NZD_BASE_INCOME * 3 ** (level - NZD_START_LEVEL) : 0,
     style: LEVEL_STYLES[index]
   };
@@ -1905,6 +1905,14 @@ function questData() {
   ];
 }
 
+function levelIncomeText(level) {
+  const item = levelData(level);
+  const coinIncome = text("coinIncome", formatNumber(item.coinIncome));
+  if (item.nzdIncome <= 0) return coinIncome;
+  const nzdIncome = text("nzdIncome", formatNZD(item.nzdIncome * Math.max(1, state.nzdMultiplier || 1)));
+  return `${coinIncome} · ${nzdIncome}`;
+}
+
 function openModal(type) {
   dom.modalBackdrop.dataset.modalType = type;
 
@@ -1921,15 +1929,13 @@ function openModal(type) {
       <div class="sheep-book">
         ${LEVELS.map((item) => {
           const unlocked = item.level <= state.maxLevel;
-          const earn = item.level >= NZD_START_LEVEL
-            ? text("nzdIncome", formatNZD(item.nzdIncome * Math.max(1, state.nzdMultiplier || 1)))
-            : text("coinIncome", formatNumber(item.coinIncome));
+          const earn = levelIncomeText(item.level);
           return `
             <div class="book-item ${unlocked ? "" : "locked"}">
               <span class="book-preview sheep-token variant-${item.level}" style="${sheepStyleAttr(item.level)}">${sheepMarkup({ level: item.level })}</span>
               <strong>${unlocked ? item.name : text("unknown")}</strong>
               <span>Lv.${item.level} · ${text("mergeCount", mergeRequirement(item.level))}</span>
-              <span>${earn}</span>
+              <span class="book-income">${earn}</span>
             </div>
           `;
         }).join("")}
@@ -2074,9 +2080,7 @@ function closeModal(force = false) {
 function showLevelUp(level) {
   dom.modalTitle.textContent = text("levelUpTitle");
   const item = levelData(level);
-  const earn = level >= NZD_START_LEVEL
-    ? text("nzdIncome", formatNZD(item.nzdIncome * Math.max(1, state.nzdMultiplier || 1)))
-    : text("coinIncome", formatNumber(item.coinIncome));
+  const earn = levelIncomeText(level);
   dom.modalBody.innerHTML = `
     <button class="sheep-token variant-${level}" style="${sheepStyleAttr(level)}" type="button">${sheepMarkup({ level })}</button>
     <div>Lv.${level} ${item.name}</div>
