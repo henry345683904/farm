@@ -72,91 +72,11 @@ button {
   touch-action: manipulation;
 }
 
-.scene-bg,
-.scene-bg > * {
-  position: absolute;
-  pointer-events: none;
-}
-
 .scene-bg {
-  inset: 0;
-}
-
-.cloud {
-  top: 42px;
-  width: 136px;
-  height: 74px;
-  border-radius: 60px;
-  background: rgba(255, 243, 235, 0.92);
-}
-
-.cloud::before,
-.cloud::after {
-  content: "";
   position: absolute;
-  border-radius: 50%;
-  background: inherit;
-}
-
-.cloud::before {
-  left: -30px;
-  top: 12px;
-  width: 74px;
-  height: 74px;
-}
-
-.cloud::after {
-  right: -26px;
-  top: 19px;
-  width: 92px;
-  height: 92px;
-}
-
-.cloud-left {
-  left: -76px;
-}
-
-.cloud-right {
-  right: -72px;
-  top: 70px;
-}
-
-.tree {
-  left: -32px;
-  top: 128px;
-  width: 150px;
-  height: 132px;
-  border-radius: 50%;
-  background:
-    radial-gradient(circle at 54% 22%, #55c765 0 26px, transparent 27px),
-    radial-gradient(circle at 34% 46%, #39b957 0 42px, transparent 43px),
-    radial-gradient(circle at 66% 56%, #4fc367 0 46px, transparent 47px),
-    #49bf62;
-  filter: blur(0.2px);
-}
-
-.house {
-  right: -18px;
-  top: 112px;
-  width: 138px;
-  height: 110px;
-  opacity: 0.66;
-  background:
-    linear-gradient(135deg, transparent 0 44%, #f5df85 45% 60%, transparent 61%) 18px 0 / 92px 62px no-repeat,
-    linear-gradient(180deg, #fff2de, #e9cab0) 26px 44px / 94px 62px no-repeat;
-  border-radius: 8px;
-}
-
-.hills {
-  left: -8%;
-  right: -8%;
-  top: 224px;
-  height: 145px;
-  border-radius: 50% 50% 0 0;
-  background:
-    radial-gradient(ellipse at 80% 72%, #48aa49 0 25%, transparent 26%),
-    radial-gradient(ellipse at 28% 65%, #75d852 0 28%, transparent 29%),
-    linear-gradient(180deg, #9be664, #65bc3e);
+  inset: 0;
+  pointer-events: none;
+  background: url("./assets/backgrounds/new-zealand-pasture.jpg") center / cover no-repeat;
 }
 
 .game-header {
@@ -568,21 +488,6 @@ button {
   -webkit-touch-callout: none;
   -webkit-user-select: none;
   user-select: none;
-}
-
-.pasture-field::before {
-  content: "";
-  position: absolute;
-  left: 2%;
-  right: 2%;
-  top: 4%;
-  height: 94%;
-  border-radius: 50%;
-  background:
-    radial-gradient(ellipse at 18% 28%, rgba(76, 151, 56, 0.28) 0 10%, transparent 11%),
-    radial-gradient(ellipse at 72% 21%, rgba(76, 151, 56, 0.22) 0 13%, transparent 14%),
-    radial-gradient(ellipse at 45% 72%, rgba(76, 151, 56, 0.2) 0 11%, transparent 12%);
-  pointer-events: none;
 }
 
 .pasture-hint {
