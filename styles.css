@@ -114,15 +114,15 @@ button {
 .wood-sign {
   position: relative;
   display: grid;
-  grid-template-columns: 26px minmax(0, 1fr) minmax(0, 1.08fr);
-  grid-template-rows: minmax(22px, auto) minmax(14px, auto);
+  grid-template-columns: 28px minmax(0, 1fr) minmax(0, 1.08fr);
+  grid-template-rows: minmax(24px, auto) minmax(16px, auto);
   align-items: center;
   column-gap: 7px;
   row-gap: 2px;
-  width: min(90%, 360px);
-  padding: 6px 10px 8px;
+  width: min(96%, 380px);
+  padding: 7px 12px 9px;
   color: #21130d;
-  font-size: 1rem;
+  font-size: 1.08rem;
   background: linear-gradient(180deg, #f2c467, #d99530);
   border-radius: 4px;
   box-shadow: inset 0 -8px 0 rgba(109, 58, 19, 0.16), 0 8px 0 rgba(104, 55, 18, 0.25);
@@ -146,7 +146,7 @@ button {
   width: 100%;
   min-width: 0;
   overflow: visible;
-  font-size: 0.7rem;
+  font-size: 0.74rem;
   font-weight: 950;
   line-height: 1.1;
   white-space: nowrap;
@@ -212,8 +212,8 @@ button {
 }
 
 .gem {
-  width: 24px;
-  height: 24px;
+  width: 26px;
+  height: 26px;
   border-radius: 50% 45% 52% 43%;
   background:
     radial-gradient(circle at 35% 28%, #ffffff 0 16%, transparent 17%),
