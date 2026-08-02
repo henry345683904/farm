@@ -8,7 +8,7 @@
     />
     <title>开心养羊场</title>
     <link rel="icon" href="data:," />
-    <link rel="stylesheet" href="./styles.css?v=20260802-shifted-background" />
+    <link rel="stylesheet" href="./styles.css?v=20260802-adaptive-balance" />
   </head>
   <body>
     <main class="phone-stage" aria-label="开心养羊场">
@@ -17,12 +17,13 @@
         <button id="languageToggle" class="language-toggle" type="button" data-testid="language-toggle">EN</button>
         <div class="wood-sign">
           <span class="gem"></span>
-          <strong id="coins">100 金币</strong>
+          <strong id="coins" class="balance-value">100 金币</strong>
           <span class="nzd-wallet">
-            <strong id="nzd">NZ$0</strong>
+            <strong id="nzd" class="balance-value">NZ$0</strong>
             <button id="withdrawButton" type="button" data-testid="withdraw-button">提现</button>
           </span>
-          <small id="income">+0/秒</small>
+          <small id="coinIncome" class="income-rate coin-income">+0/秒</small>
+          <small id="nzdIncome" class="income-rate nzd-income">+NZ$0/秒</small>
         </div>
       </header>
 

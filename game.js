@@ -1626,6 +1626,23 @@ function formatNZD(value) {
   return precise === "0" ? `NZ$${amount.toExponential(2)}` : `NZ$${precise}`;
 }
 
+function fitHudText(element, minimumFontSize) {
+  element.style.removeProperty("font-size");
+  const fontSize = Number.parseFloat(getComputedStyle(element).fontSize);
+  const availableWidth = element.clientWidth;
+  const requiredWidth = element.scrollWidth;
+  if (!availableWidth || requiredWidth <= availableWidth) return;
+  const fittedSize = Math.max(minimumFontSize, fontSize * (availableWidth / requiredWidth) * 0.98);
+  element.style.fontSize = `${fittedSize}px`;
+}
+
+function fitHudBalances() {
+  fitHudText(dom.coins, 10);
+  fitHudText(dom.nzd, 9);
+  fitHudText(dom.coinIncome, 8);
+  fitHudText(dom.nzdIncome, 8);
+}
+
 function sheepStyleAttr(level) {
   return Object.entries(levelData(level).style)
     .map(([key, value]) => `${key}:${value}`)
@@ -1701,7 +1718,9 @@ function renderHud() {
     : `+${formatNumber(baseCoinIncome)}/${text("incomeSecond")}`;
   dom.coins.textContent = `${coinBalanceText()} ${text("coins")}`;
   dom.nzd.textContent = formatNZD(state.nzd);
-  dom.income.innerHTML = `${coinIncomeText} · +${formatNZD(nzdIncomePerSecond())}/${text("incomeSecond")}`;
+  dom.coinIncome.innerHTML = coinIncomeText;
+  dom.nzdIncome.textContent = `+${formatNZD(nzdIncomePerSecond())}/${text("incomeSecond")}`;
+  fitHudBalances();
   dom.maxLevel.textContent = `Lv.${state.maxLevel}`;
   dom.maxLevel.parentElement.innerHTML = text("levelLine", `<strong id="maxLevel">Lv.${state.maxLevel}</strong>`, `<span id="pastureCount">${state.pasture.length}</span>`);
   dom.maxLevel = document.getElementById("maxLevel");
@@ -2324,7 +2343,8 @@ function bindDom() {
   [
     "coins",
     "nzd",
-    "income",
+    "coinIncome",
+    "nzdIncome",
     "maxLevel",
     "pastureCount",
     "buySheep",
