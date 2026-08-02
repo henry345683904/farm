@@ -119,7 +119,8 @@ button {
   align-items: center;
   column-gap: 7px;
   row-gap: 2px;
-  width: min(96%, 380px);
+  width: calc(100% - 4px);
+  max-width: 408px;
   padding: 7px 12px 9px;
   color: #21130d;
   font-size: 1.08rem;
